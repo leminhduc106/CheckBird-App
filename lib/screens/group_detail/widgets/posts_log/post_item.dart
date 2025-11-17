@@ -52,116 +52,157 @@ class _PostItemState extends State<PostItem>
               );
             }
             Post post = snapshot.data!;
-            return Center(
+            return Container(
+              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               child: Card(
-                margin: const EdgeInsets.symmetric(vertical: 20),
-                elevation: 3.5,
+                elevation: 0,
+                color: Theme.of(context).colorScheme.surface,
                 shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8)),
-                clipBehavior: Clip.antiAlias,
-                child: SizedBox(
-                  width: constraints.maxWidth * 0.9,
+                    borderRadius: BorderRadius.circular(16)),
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(16),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(
                         children: [
-                          CircleAvatar(
-                            child: Image.network(post.posterAvatarUrl),
-                          ),
-                          const SizedBox(
-                            width: 10,
-                          ),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                post.posterName,
-                                style: const TextStyle(
-                                    fontWeight: FontWeight.bold),
+                          Container(
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+                                width: 2,
                               ),
-                              Text(createdAtStr(post.createdAt!)),
-                            ],
+                            ),
+                            child: CircleAvatar(
+                              radius: 20,
+                              backgroundImage: NetworkImage(post.posterAvatarUrl),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  post.posterName,
+                                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  createdAtStr(post.createdAt!),
+                                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ],
                       ),
-                      Divider(
-                        thickness: 2,
-                        color: Theme.of(context).colorScheme.onBackground,
-                        indent: 20,
-                        endIndent: 20,
-                      ),
+                      const SizedBox(height: 12),
                       if (post.postText != null)
-                        Padding(
-                          padding: const EdgeInsets.all(10.0),
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(vertical: 8),
                           child: Text(
                             post.postText!,
+                            style: Theme.of(context).textTheme.bodyLarge,
                             textAlign: TextAlign.left,
                           ),
                         ),
-                      if (post.posterImageUrl != null)
-                        Center(
-                          child: SizedBox(
-                              height: 300,
-                              child: Image.network(post.posterImageUrl!)),
-                        ),
-                      Divider(
-                        thickness: 2,
-                        color: Theme.of(context).colorScheme.onBackground,
-                        indent: 20,
-                        endIndent: 20,
-                      ),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: [
-                          Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              LikeButton(
-                                postId: widget.postId,
-                                groupId: widget.groupId,
-                              ),
-                              Text(
-                                post.likeCount.toString(),
-                                style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    color: Theme.of(context).primaryColor),
-                              ),
-                            ],
+                      if (post.posterImageUrl != null) ...[
+                        const SizedBox(height: 12),
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: Container(
+                            constraints: const BoxConstraints(
+                              maxHeight: 300,
+                            ),
+                            width: double.infinity,
+                            child: Image.network(
+                              post.posterImageUrl!,
+                              fit: BoxFit.cover,
+                            ),
                           ),
-                          Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              TextButton.icon(
-                                onPressed: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => PostChatScreen(
-                                        postId: widget.postId,
-                                        groupId: widget.groupId,
-                                        posterName: post.posterName,
+                        ),
+                      ],
+                      const SizedBox(height: 16),
+                      Container(
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  LikeButton(
+                                    postId: widget.postId,
+                                    groupId: widget.groupId,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    post.likeCount.toString(),
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                      color: Theme.of(context).colorScheme.primary,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Expanded(
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  TextButton.icon(
+                                    onPressed: () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) => PostChatScreen(
+                                            postId: widget.postId,
+                                            groupId: widget.groupId,
+                                            posterName: post.posterName,
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                    icon: Icon(
+                                      Icons.chat_bubble_outline_rounded,
+                                      size: 18,
+                                    ),
+                                    label: Text(
+                                      "Comment",
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w500,
                                       ),
                                     ),
-                                  );
-                                },
-                                icon: const Icon(Icons.mode_comment_outlined),
-                                label: const Text("Chat"),
-                                style: TextButton.styleFrom(
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(8),
+                                    style: TextButton.styleFrom(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 12, vertical: 8),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(20),
+                                      ),
+                                    ),
                                   ),
-                                ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    post.chatCount.toString(),
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                      color: Theme.of(context).colorScheme.primary,
+                                    ),
+                                  ),
+                                ],
                               ),
-                              Text(
-                                post.chatCount.toString(),
-                                style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    color: Theme.of(context).primaryColor),
-                              ),
-                            ],
-                          ),
-                        ],
+                            ),
+                          ],
+                        ),
                       ),
                     ],
                   ),

@@ -49,83 +49,149 @@ class _SettingScreenState extends State<SettingScreen> {
         ),
       );
 
-  Widget buildFeedBack() => SimpleSettingsTile(
-        title: "Send Feedback",
-        subtitle: '',
-        leading: Container(
-          padding: const EdgeInsets.all(6),
-          decoration: const BoxDecoration(
-            shape: BoxShape.circle,
-            color: Colors.deepPurple,
+  Widget buildFeedBack() => Container(
+        margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+        child: ListTile(
+          title: Text(
+            "Send Feedback",
+            style: TextStyle(
+              fontWeight: FontWeight.w500,
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
           ),
-          child: const Icon(
-            Icons.thumb_up_rounded,
-            color: Colors.white,
+          subtitle: Text(
+            "Help us improve the app",
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+            ),
           ),
+          leading: Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.primaryContainer,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(
+              Icons.thumb_up_rounded,
+              color: Theme.of(context).colorScheme.onPrimaryContainer,
+              size: 20,
+            ),
+          ),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          onTap: () {
+            // Add feedback functionality
+          },
         ),
       );
 
-  Widget buildReportBug() => SimpleSettingsTile(
-        title: "Report bug",
-        subtitle: '',
-        leading: Container(
-          padding: const EdgeInsets.all(6),
-          decoration: const BoxDecoration(
-            shape: BoxShape.circle,
-            color: Colors.teal,
+  Widget buildReportBug() => Container(
+        margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+        child: ListTile(
+          title: Text(
+            "Report Bug",
+            style: TextStyle(
+              fontWeight: FontWeight.w500,
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
           ),
-          child: const Icon(
-            Icons.error_outline_rounded,
-            color: Colors.white,
+          subtitle: Text(
+            "Report issues you encounter",
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+            ),
           ),
+          leading: Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.errorContainer,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(
+              Icons.bug_report_rounded,
+              color: Theme.of(context).colorScheme.onErrorContainer,
+              size: 20,
+            ),
+          ),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          onTap: () {
+            // Add bug report functionality
+          },
         ),
       );
 
-  Widget buildDeleteAccount() => SimpleSettingsTile(
-        title: "Delete Account",
-        leading: Container(
-          padding: const EdgeInsets.all(6),
-          decoration: const BoxDecoration(
-            shape: BoxShape.circle,
-            color: Colors.red,
+  Widget buildDeleteAccount() => Container(
+        margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+        child: ListTile(
+          title: Text(
+            "Delete Account",
+            style: TextStyle(
+              fontWeight: FontWeight.w500,
+              color: Theme.of(context).colorScheme.error,
+            ),
           ),
-          child: const Icon(
-            Icons.error_outline_rounded,
-            color: Colors.white,
+          subtitle: Text(
+            "Permanently delete your account",
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+            ),
           ),
-        ),
-        onTap: () {
-          showDialog(
-            context: context,
-            builder: (contextDialog) {
-              return AlertDialog(
-                title: const Text('Delete your Account?'),
-                content: const Text(
-                    '''If you select Delete we will delete your account on our server.\nYour app data will also be deleted and you won't be able to retrieve it.'''),
-                actions: [
-                  TextButton(
-                    child: const Text('Cancel'),
-                    onPressed: () {
-                      Navigator.of(contextDialog).pop();
-                    },
+          leading: Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.errorContainer,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(
+              Icons.delete_forever_rounded,
+              color: Theme.of(context).colorScheme.onErrorContainer,
+              size: 20,
+            ),
+          ),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          onTap: () {
+            showDialog(
+              context: context,
+              builder: (contextDialog) {
+                return AlertDialog(
+                  icon: Icon(
+                    Icons.warning_rounded,
+                    color: Theme.of(context).colorScheme.error,
+                    size: 32,
                   ),
-                  TextButton(
-                    child: const Text(
-                      'Delete',
-                      style: TextStyle(color: Colors.red),
+                  title: const Text('Delete Account?'),
+                  content: const Text(
+                      '''This action cannot be undone. Your account and all associated data will be permanently deleted from our servers.'''),
+                  actions: [
+                    TextButton(
+                      onPressed: () {
+                        Navigator.of(contextDialog).pop();
+                      },
+                      child: const Text('Cancel'),
                     ),
-                    onPressed: () async {
-                      Navigator.of(contextDialog).pop();
-                      await Authentication.deleteUserAccount();
-                      if (!context.mounted) return;
-                      Navigator.of(context).pop();
-                    },
-                  ),
-                ],
-              );
-            },
-          );
-        },
+                    FilledButton(
+                      style: FilledButton.styleFrom(
+                        backgroundColor: Theme.of(context).colorScheme.error,
+                      ),
+                      onPressed: () async {
+                        Navigator.of(contextDialog).pop();
+                        await Authentication.deleteUserAccount();
+                        if (!context.mounted) return;
+                        Navigator.of(context).pop();
+                      },
+                      child: const Text('Delete'),
+                    ),
+                  ],
+                );
+              },
+            );
+          },
+        ),
       );
 
   Widget buildLanguages() => DropDownSettingsTile(

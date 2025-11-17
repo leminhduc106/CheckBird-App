@@ -13,95 +13,143 @@ class AppDrawer extends StatelessWidget {
       child: Column(
         children: [
           Container(
-            color: Theme.of(context).colorScheme.secondary,
-            height: size.height * 0.4,
-            width: double.infinity,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                Container(
-                  margin:
-                      const EdgeInsets.symmetric(horizontal: 30, vertical: 20),
-                  child: CircleAvatar(
-                    radius: 60,
-                    backgroundColor: Colors.grey,
-                    backgroundImage: Authentication.user == null
-                        ? null
-                        : NetworkImage(Authentication.user!.photoURL!),
-                  ),
-                ),
-                Container(
-                  margin: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                  ),
-                  child: Text(
-                    Authentication.user == null
-                        ? "Not available"
-                        : Authentication.user!.displayName!,
-                    overflow: TextOverflow.fade,
-                    style: const TextStyle(
-                      fontSize: 25,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Theme.of(context).colorScheme.primary,
+                  Theme.of(context).colorScheme.primary.withOpacity(0.8),
+                ],
+              ),
+            ),
+            child: SafeArea(
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(20.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SizedBox(height: 20),
+                    Container(
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.3),
+                          width: 3,
+                        ),
+                      ),
+                      child: CircleAvatar(
+                        radius: 40,
+                        backgroundColor: Theme.of(context).colorScheme.surface,
+                        backgroundImage: Authentication.user?.photoURL != null
+                            ? NetworkImage(Authentication.user!.photoURL!)
+                            : null,
+                        child: Authentication.user?.photoURL == null
+                            ? Icon(
+                                Icons.person_rounded,
+                                size: 40,
+                                color: Theme.of(context).colorScheme.onSurface,
+                              )
+                            : null,
+                      ),
                     ),
-                  ),
-                ),
-                Container(
-                  margin: const EdgeInsets.only(
-                    left: 20,
-                    bottom: 10,
-                  ),
-                  child: Text(
-                    Authentication.user == null
-                        ? "Not available"
-                        : Authentication.user!.email!,
-                    overflow: TextOverflow.fade,
-                    style: const TextStyle(
-                      color: Colors.white,
+                    const SizedBox(height: 16),
+                    // User name
+                    Text(
+                      Authentication.user?.displayName ?? "Guest User",
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w600,
+                        color: Theme.of(context).colorScheme.onPrimary,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                  ),
+                    const SizedBox(height: 4),
+                    // User email
+                    Text(
+                      Authentication.user?.email ?? "Not signed in",
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.8),
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 20),
+                  ],
                 ),
-              ],
+              ),
             ),
           ),
+          // Navigation items
           Expanded(
             child: ListView(
+              padding: const EdgeInsets.symmetric(vertical: 8),
               children: [
-                // TODO: Profile Screen
-                // ListTile(
-                //   title: const Text("Profile"),
-                //   leading: const Icon(Icons.account_circle_rounded),
-                //   onTap: () {
-                //     Navigator.of(context).pop();
-                //     Navigator.of(context).pushNamed('/TODO');
-                //   },
-                // ),
-                ListTile(
-                  title: const Text("Setting"),
-                  leading: const Icon(Icons.settings),
+                _buildDrawerItem(
+                  context: context,
+                  icon: Icons.settings_rounded,
+                  title: "Settings",
                   onTap: () {
                     Navigator.of(context).pop();
                     Navigator.of(context).pushNamed(SettingScreen.routeName);
                   },
                 ),
-                ListTile(
-                  title: const Text("About Us"),
-                  leading: const Icon(Icons.people_outline),
+                _buildDrawerItem(
+                  context: context,
+                  icon: Icons.info_rounded,
+                  title: "About Us",
                   onTap: () {
                     Navigator.of(context).pop();
                     Navigator.of(context).pushNamed(AboutScreen.routeName);
                   },
                 ),
-                ListTile(
-                  title: const Text("Logout"),
-                  leading: const Icon(Icons.logout_rounded),
-                  onTap: () => Authentication.signOut(),
+                const Divider(indent: 16, endIndent: 16),
+                _buildDrawerItem(
+                  context: context,
+                  icon: Icons.logout_rounded,
+                  title: "Logout",
+                  textColor: Theme.of(context).colorScheme.error,
+                  onTap: () async {
+                    Navigator.of(context).pop();
+                    await Authentication.signOut();
+                  },
                 ),
               ],
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildDrawerItem({
+    required BuildContext context,
+    required IconData icon,
+    required String title,
+    required VoidCallback onTap,
+    Color? textColor,
+  }) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+      child: ListTile(
+        leading: Icon(
+          icon,
+          color: textColor ?? Theme.of(context).colorScheme.onSurface,
+        ),
+        title: Text(
+          title,
+          style: TextStyle(
+            color: textColor ?? Theme.of(context).colorScheme.onSurface,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        onTap: onTap,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
       ),
     );
   }

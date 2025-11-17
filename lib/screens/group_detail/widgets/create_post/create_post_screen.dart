@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:async';
 
 import 'package:check_bird/screens/group_detail/models/posts_controller.dart';
 import 'package:check_bird/screens/group_detail/widgets/create_post/widgets/image_type_dialog.dart';
@@ -14,7 +15,7 @@ enum AppState {
 }
 
 class CreatePostScreen extends StatefulWidget {
-  const CreatePostScreen({super.key, required this.groupId});
+  const CreatePostScreen({Key? key, required this.groupId}) : super(key: key);
   final String groupId;
   @override
   State<CreatePostScreen> createState() => _CreatePostScreenState();
@@ -52,37 +53,10 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
   Future<void> _cropImage() async {
     CroppedFile? croppedFile = await ImageCropper().cropImage(
       sourcePath: _image!.path,
-      uiSettings: [
-        AndroidUiSettings(
-          toolbarTitle: 'Cropper',
-          toolbarColor: Colors.deepOrange,
-          toolbarWidgetColor: Colors.white,
-          initAspectRatio: CropAspectRatioPreset.original,
-          lockAspectRatio: false,
-          aspectRatioPresets: [
-            CropAspectRatioPreset.square,
-            CropAspectRatioPreset.ratio3x2,
-            CropAspectRatioPreset.original,
-            CropAspectRatioPreset.ratio4x3,
-            CropAspectRatioPreset.ratio16x9,
-          ],
-        ),
-        IOSUiSettings(
-          title: 'Cropper',
-          aspectRatioLockEnabled: false,
-          aspectRatioPickerButtonHidden: false,
-          aspectRatioPresets: [
-            CropAspectRatioPreset.original,
-            CropAspectRatioPreset.square,
-            CropAspectRatioPreset.ratio3x2,
-            CropAspectRatioPreset.ratio4x3,
-            CropAspectRatioPreset.ratio5x3,
-            CropAspectRatioPreset.ratio5x4,
-            CropAspectRatioPreset.ratio7x5,
-            CropAspectRatioPreset.ratio16x9,
-          ],
-        )
-      ],
+      aspectRatio: const CropAspectRatio(ratioX: 1, ratioY: 1),
+      compressQuality: 70,
+      maxWidth: 700,
+      maxHeight: 700,
     );
     if (croppedFile != null) {
       _image = File(croppedFile.path);
@@ -103,167 +77,237 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
         // extendBodyBehindAppBar: true,
         // backgroundColor: Colors.white,
         appBar: AppBar(
+          title: const Text("Create Post"),
           elevation: 0,
           leading: IconButton(
-            icon: const Icon(Icons.arrow_back),
+            icon: const Icon(Icons.close_rounded),
             onPressed: () {
               Navigator.of(context).pop();
             },
           ),
           actions: [
-            TextButton(
-                style: TextButton.styleFrom(
-                    foregroundColor: Colors.black12,
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: FilledButton(
+                  style: FilledButton.styleFrom(
                     backgroundColor: _hasContent
-                        ? Theme.of(context).primaryColor
-                        : Theme.of(context).colorScheme.secondaryContainer),
-                onPressed: _hasContent
-                    ? () {
-                        PostsController().createPostInDB(
-                            groupId: widget.groupId,
-                            text: _enteredText,
-                            img: _image);
-                        Navigator.pop(context);
-                      }
-                    : null,
-                child: Text(
-                  "Post",
-                  style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: _hasContent
-                          ? Theme.of(context).colorScheme.background
-                          : null),
-                )),
+                        ? Theme.of(context).colorScheme.primary
+                        : Theme.of(context).colorScheme.surface,
+                    foregroundColor: _hasContent
+                        ? Theme.of(context).colorScheme.onPrimary
+                        : Theme.of(context)
+                            .colorScheme
+                            .onSurface
+                            .withOpacity(0.38),
+                    elevation: _hasContent ? 1 : 0,
+                  ),
+                  onPressed: _hasContent
+                      ? () {
+                          PostsController().createPostInDB(
+                              groupId: widget.groupId,
+                              text: _enteredText,
+                              img: _image);
+                          Navigator.pop(context);
+                        }
+                      : null,
+                  child: Text(
+                    "Post",
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  )),
+            ),
           ],
         ),
         body: SingleChildScrollView(
           child: Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(20),
             child: Column(
               children: [
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    CircleAvatar(
-                      backgroundImage:
-                          NetworkImage(Authentication.user!.photoURL!),
-                    ),
-                    SizedBox(
-                      width: size.width * 0.08,
-                    ),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          Authentication.user!.displayName!,
-                          style: const TextStyle(
-                              fontWeight: FontWeight.bold, fontSize: 20),
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context)
+                        .colorScheme
+                        .surfaceVariant
+                        .withOpacity(0.3),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: Theme.of(context)
+                                .colorScheme
+                                .primary
+                                .withOpacity(0.3),
+                            width: 2,
+                          ),
                         ),
-                        Text(
-                          Authentication.user!.email!,
-                          style: const TextStyle(
-                              fontWeight: FontWeight.bold, fontSize: 12),
+                        child: CircleAvatar(
+                          radius: 24,
+                          backgroundImage:
+                              NetworkImage(Authentication.user!.photoURL!),
                         ),
-                      ],
-                    ),
-                  ],
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              Authentication.user!.displayName!,
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .titleMedium
+                                  ?.copyWith(fontWeight: FontWeight.w600),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              Authentication.user!.email!,
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodySmall
+                                  ?.copyWith(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurface
+                                        .withOpacity(0.6),
+                                  ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-                SizedBox(
-                  height: size.height * 0.08,
-                ),
+                const SizedBox(height: 24),
                 TextField(
                   controller: _textController,
                   focusNode: _focusNode,
                   keyboardType: TextInputType.multiline,
                   maxLines: null,
-                  decoration:
-                      const InputDecoration(hintText: "What's on your mind?"),
+                  minLines: 3,
+                  decoration: InputDecoration(
+                    hintText: "What's on your mind?",
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: BorderSide(
+                        color: Theme.of(context).colorScheme.outline,
+                      ),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: BorderSide(
+                        color: Theme.of(context).colorScheme.primary,
+                        width: 2,
+                      ),
+                    ),
+                    filled: true,
+                    fillColor: Theme.of(context).colorScheme.surface,
+                    contentPadding: const EdgeInsets.all(16),
+                  ),
+                  style: Theme.of(context).textTheme.bodyLarge,
                   onChanged: (value) {
                     setState(() {
                       _enteredText = value;
                     });
                   },
                 ),
-                SizedBox(
-                  height: size.height * 0.05,
+                const SizedBox(height: 20),
+                Row(
+                  children: [
+                    Icon(
+                      Icons.image_rounded,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      "Add Image",
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                            color: Theme.of(context).colorScheme.primary,
+                            fontWeight: FontWeight.w600,
+                          ),
+                    ),
+                    const Spacer(),
+                    if (_image == null)
+                      FilledButton.icon(
+                        icon: const Icon(Icons.add_photo_alternate_rounded),
+                        label: const Text("Add"),
+                        onPressed: () async {
+                          if (_focusNode.hasPrimaryFocus) {
+                            _focusNode.unfocus();
+                          }
+                          final useCam = await showDialog(
+                              context: context,
+                              builder: (context) {
+                                return const ImageTypeDialog();
+                              });
+                          if (useCam == null) return;
+                          if (useCam) {
+                            await _pickImage(ImageSource.camera);
+                          } else {
+                            await _pickImage(ImageSource.gallery);
+                          }
+                          await _cropImage();
+                        },
+                      )
+                    else
+                      Wrap(
+                        spacing: 8,
+                        children: [
+                          OutlinedButton(
+                            child: const Text("Remove"),
+                            onPressed: () {
+                              if (_focusNode.hasPrimaryFocus) {
+                                _focusNode.unfocus();
+                              }
+                              _clearImage();
+                            },
+                          ),
+                          FilledButton(
+                            child: const Text("Edit"),
+                            onPressed: () async {
+                              if (_focusNode.hasPrimaryFocus) {
+                                _focusNode.unfocus();
+                              }
+                              await _cropImage();
+                            },
+                          ),
+                        ],
+                      ),
+                  ],
                 ),
-                Align(
-                  alignment: Alignment.topRight,
-                  child: _image == null
-                      ? ElevatedButton(
-                          child: const Text("Add image"),
-                          onPressed: () async {
-                            if (_focusNode.hasPrimaryFocus) {
-                              _focusNode.unfocus();
-                            }
-                            final useCam = await showDialog(
-                                context: context,
-                                builder: (context) {
-                                  return const ImageTypeDialog();
-                                });
-                            if (useCam == null) return;
-                            if (useCam) {
-                              await _pickImage(ImageSource.camera);
-                            } else {
-                              await _pickImage(ImageSource.gallery);
-                            }
-                            await _cropImage();
-                          },
-                        )
-                      : Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                          children: [
-                            ElevatedButton(
-                              child: const Text("Remove"),
-                              onPressed: () {
-                                if (_focusNode.hasPrimaryFocus) {
-                                  _focusNode.unfocus();
-                                }
-                                _clearImage();
-                              },
-                            ),
-                            ElevatedButton(
-                              child: const Text("Edit"),
-                              onPressed: () async {
-                                if (_focusNode.hasPrimaryFocus) {
-                                  _focusNode.unfocus();
-                                }
-                                await _cropImage();
-                              },
-                            ),
-                            ElevatedButton(
-                              child: const Text("Pick another"),
-                              onPressed: () async {
-                                if (_focusNode.hasPrimaryFocus) {
-                                  _focusNode.unfocus();
-                                }
-                                _clearImage();
-                                final useCam = await showDialog(
-                                    context: context,
-                                    builder: (context) {
-                                      return const ImageTypeDialog();
-                                    });
-                                if (useCam == null) return;
-                                if (useCam) {
-                                  await _pickImage(ImageSource.camera);
-                                } else {
-                                  await _pickImage(ImageSource.gallery);
-                                }
-                                await _cropImage();
-                              },
-                            ),
-                          ],
-                        ),
-                ),
-                SizedBox(
-                  height: size.height * 0.05,
-                ),
+                const SizedBox(height: 20),
                 if (_image != null)
-                  Center(
-                    child:
-                        SizedBox(width: size.width, child: Image.file(_image!)),
+                  Container(
+                    width: double.infinity,
+                    constraints: const BoxConstraints(
+                      maxHeight: 300,
+                    ),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: Theme.of(context)
+                            .colorScheme
+                            .outline
+                            .withOpacity(0.5),
+                      ),
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(16),
+                      child: Image.file(
+                        _image!,
+                        fit: BoxFit.cover,
+                      ),
+                    ),
                   ),
+                const SizedBox(height: 20),
               ],
             ),
           ),

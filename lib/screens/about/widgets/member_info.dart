@@ -65,10 +65,10 @@ class MemberInformation extends StatelessWidget {
                     ),
                   )
                 else
-                  const Text(
+                  Text(
                     "Member",
                     style: TextStyle(
-                      color: Colors.green,
+                      color: Theme.of(context).colorScheme.primary,
                       fontWeight: FontWeight.bold,
                     ),
                   ),

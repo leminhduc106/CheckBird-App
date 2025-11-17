@@ -35,9 +35,12 @@ class _GroupTopicTabState extends State<GroupTopicTab> {
         },
       ),
       floatingActionButton: FloatingActionButton(
+        backgroundColor: const Color(0xFFE3F2FD),
+        foregroundColor: const Color(0xFF1976D2),
+        elevation: 3,
         child: const Icon(
-          Icons.add,
-          color: Colors.white,
+          Icons.add_rounded,
+          size: 28,
         ),
         onPressed: () async {
           await Navigator.of(context).push(
@@ -49,8 +52,8 @@ class _GroupTopicTabState extends State<GroupTopicTab> {
               ),
               transitionsBuilder:
                   (context, animation, secondaryAnimation, child) {
-                const begin = Offset(0.0, 1.0);
-                const end = Offset.zero;
+                final begin = Offset(0.0, 1.0);
+                final end = Offset.zero;
                 const curve = Curves.ease;
 
                 var tween = Tween(begin: begin, end: end)

@@ -21,11 +21,11 @@ class TimerDisplay extends StatelessWidget {
             value: duration.inSeconds / countDownTime.inSeconds,
             valueColor: const AlwaysStoppedAnimation(Colors.blue),
             strokeWidth: 12,
-            backgroundColor: Colors.greenAccent,
+            backgroundColor: Colors.blue.withOpacity(0.2),
           ),
           Center(
             child: duration.inSeconds == 0
-                ? const Icon(Icons.done, color: Colors.greenAccent, size: 112)
+                ? const Icon(Icons.done, color: Colors.blue, size: 112)
                 : Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [

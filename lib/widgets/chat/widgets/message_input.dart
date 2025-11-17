@@ -9,9 +9,10 @@ import 'dart:io';
 
 class MessageInput extends StatefulWidget {
   const MessageInput(
-      {super.key,
+      {Key? key,
       required this.chatScreenArguments,
-      required this.messagesLogController});
+      required this.messagesLogController})
+      : super(key: key);
   final ChatScreenArguments chatScreenArguments;
   final ScrollController messagesLogController;
 
@@ -41,36 +42,10 @@ class _MessageInputState extends State<MessageInput> {
   Future<File?> _cropImage(File image) async {
     CroppedFile? croppedFile = await ImageCropper().cropImage(
       sourcePath: image.path,
-      uiSettings: [
-        AndroidUiSettings(
-          toolbarTitle: 'Cropper',
-          toolbarColor: Colors.deepOrange,
-          toolbarWidgetColor: Colors.white,
-          initAspectRatio: CropAspectRatioPreset.original,
-          lockAspectRatio: false,
-          aspectRatioPresets: [
-            CropAspectRatioPreset.square,
-            CropAspectRatioPreset.ratio3x2,
-            CropAspectRatioPreset.original,
-            CropAspectRatioPreset.ratio4x3,
-            CropAspectRatioPreset.ratio16x9,
-          ],
-        ),
-        IOSUiSettings(
-          title: 'Cropper',
-          aspectRatioLockEnabled: false,
-          aspectRatioPresets: [
-            CropAspectRatioPreset.original,
-            CropAspectRatioPreset.square,
-            CropAspectRatioPreset.ratio3x2,
-            CropAspectRatioPreset.ratio4x3,
-            CropAspectRatioPreset.ratio5x3,
-            CropAspectRatioPreset.ratio5x4,
-            CropAspectRatioPreset.ratio7x5,
-            CropAspectRatioPreset.ratio16x9,
-          ],
-        ),
-      ],
+      aspectRatio: const CropAspectRatio(ratioX: 1, ratioY: 1),
+      compressQuality: 70,
+      maxWidth: 700,
+      maxHeight: 700,
     );
 
     if (croppedFile != null) {
@@ -142,85 +117,134 @@ class _MessageInputState extends State<MessageInput> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(8),
-      color: Theme.of(context).colorScheme.secondaryContainer,
+      padding: EdgeInsets.only(
+        left: 16,
+        right: 16,
+        top: 12,
+        bottom: 12 + MediaQuery.of(context).padding.bottom,
+      ),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        border: Border(
+          top: BorderSide(
+            color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
+            width: 1,
+          ),
+        ),
+      ),
       child: Row(
         children: [
-          Flexible(
-            flex: 8,
+          Expanded(
             child: Container(
-              margin: const EdgeInsets.symmetric(horizontal: 10),
-              child: TextField(
-                focusNode: _focusNode,
-                controller: _controller,
-                keyboardType: TextInputType.multiline,
-                maxLines: null,
-                onChanged: (text) {
-                  setState(() {
-                    _enteredMessages = text;
-                  });
-                },
-                decoration: InputDecoration(
-                  hintText:
-                      focused ? _hintTextFocused.data : _hintTextUnfocused.data,
-                  hintStyle: focused
-                      ? _hintTextFocused.style
-                      : _hintTextUnfocused.style,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide: const BorderSide(
-                      width: 0,
-                      style: BorderStyle.none,
+              decoration: BoxDecoration(
+                color: Theme.of(context)
+                    .colorScheme
+                    .surfaceVariant
+                    .withOpacity(0.5),
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(
+                  color: Theme.of(context).colorScheme.outline.withOpacity(0.3),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      focusNode: _focusNode,
+                      controller: _controller,
+                      keyboardType: TextInputType.multiline,
+                      maxLines: 4,
+                      minLines: 1,
+                      onChanged: (text) {
+                        setState(() {
+                          _enteredMessages = text;
+                        });
+                      },
+                      decoration: InputDecoration(
+                        hintText: "Type a message...",
+                        hintStyle: TextStyle(
+                          color: Theme.of(context)
+                              .colorScheme
+                              .onSurface
+                              .withOpacity(0.6),
+                        ),
+                        border: InputBorder.none,
+                        contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 12),
+                      ),
+                      style: Theme.of(context).textTheme.bodyLarge,
                     ),
                   ),
-                  filled: true,
-                  isDense: true,
-                  contentPadding: const EdgeInsets.all(8), // Added this
-                ),
+                  if (!focused) ...[
+                    IconButton(
+                      onPressed: () {
+                        _pickImages(ImageSource.camera);
+                      },
+                      icon: Icon(
+                        Icons.camera_alt_rounded,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                      style: IconButton.styleFrom(
+                        padding: const EdgeInsets.all(8),
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () {
+                        _pickImages(ImageSource.gallery);
+                      },
+                      icon: Icon(
+                        Icons.image_rounded,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                      style: IconButton.styleFrom(
+                        padding: const EdgeInsets.all(8),
+                      ),
+                    ),
+                  ],
+                ],
               ),
             ),
           ),
-          if (!focused)
-            IconButton(
-              onPressed: () {
-                _pickImages(ImageSource.camera);
-              },
-              icon: const Icon(Icons.camera_alt_rounded),
+          const SizedBox(width: 8),
+          Container(
+            decoration: BoxDecoration(
+              color: (_enteredMessages.trim().isNotEmpty && focused)
+                  ? Theme.of(context).colorScheme.primary
+                  : Theme.of(context).colorScheme.primaryContainer,
+              shape: BoxShape.circle,
             ),
-          if (!focused)
-            IconButton(
-              onPressed: () {
-                _pickImages(ImageSource.gallery);
-              },
-              icon: const Icon(Icons.image),
-            ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              shape: const CircleBorder(),
-            ),
-            onPressed: focused
-                ? _enteredMessages.trim().isEmpty
-                    ? null
-                    : () {
-                        _sendChat(_enteredMessages.trim());
-                        _focusNode.unfocus();
-                        _controller.clear();
-                        setState(() {
-                          _enteredMessages = "";
-                        });
-                      }
-                : () {
-                    _sendChat('\u{2705}');
-                    _focusNode.unfocus();
-                    _controller.clear();
-                    setState(() {
-                      _enteredMessages = "";
-                    });
-                  },
-            child: Padding(
-              padding: const EdgeInsets.all(12.0),
-              child: Icon(
-                focused ? Icons.send : Icons.check_box,
+            child: IconButton(
+              onPressed: focused
+                  ? _enteredMessages.trim().isEmpty
+                      ? null
+                      : () {
+                          _sendChat(_enteredMessages.trim());
+                          _focusNode.unfocus();
+                          _controller.clear();
+                          setState(() {
+                            _enteredMessages = "";
+                          });
+                        }
+                  : () {
+                      _sendChat(
+                          '👍'); // Changed from green checkbox emoji to thumbs up
+                      _focusNode.unfocus();
+                      _controller.clear();
+                      setState(() {
+                        _enteredMessages = "";
+                      });
+                    },
+              icon: Icon(
+                focused
+                    ? Icons.send_rounded
+                    : Icons
+                        .thumb_up_rounded, // Changed from check_box to thumb_up
+                color: (_enteredMessages.trim().isNotEmpty && focused)
+                    ? Theme.of(context).colorScheme.onPrimary
+                    : Theme.of(context).colorScheme.onPrimaryContainer,
+              ),
+              style: IconButton.styleFrom(
+                padding: const EdgeInsets.all(12),
               ),
             ),
           ),

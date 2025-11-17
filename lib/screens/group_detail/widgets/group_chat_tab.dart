@@ -18,8 +18,11 @@ class GroupChatTab extends StatelessWidget {
         }
         final isJoined = snapshot.data!;
         if(isJoined){
-          return ChatWidget(
-            args: ChatScreenArguments(groupId: groupId, chatType: ChatType.groupChat),
+          return SafeArea(
+            bottom: false,
+            child: ChatWidget(
+              args: ChatScreenArguments(groupId: groupId, chatType: ChatType.groupChat),
+            ),
           );
         }
         else{

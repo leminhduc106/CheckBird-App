@@ -22,7 +22,7 @@ class GroupItem extends StatelessWidget {
             children: [
               CircleAvatar(
                 radius: 37,
-                backgroundColor: Theme.of(context).colorScheme.primary,
+                backgroundColor: const Color(0xFF2196F3),
                 child: CircleAvatar(
                   radius: 35,
                   backgroundImage: NetworkImage(group.groupsAvtUrl.toString()),

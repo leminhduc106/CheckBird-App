@@ -137,13 +137,24 @@ class ImageMedia extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onPress,
+      borderRadius: BorderRadius.only(
+        topLeft: const Radius.circular(20),
+        topRight: const Radius.circular(20),
+        bottomLeft: Radius.circular(isMe ? 20 : 6),
+        bottomRight: Radius.circular(isMe ? 6 : 20),
+      ),
       child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+        margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
         constraints: BoxConstraints(
-            maxWidth:
-                isMe ? constraints.maxWidth * 0.8 : constraints.maxWidth * 0.7),
+            maxWidth: constraints.maxWidth * 0.7,
+            maxHeight: 300),
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.only(
+            topLeft: const Radius.circular(20),
+            topRight: const Radius.circular(20),
+            bottomLeft: Radius.circular(isMe ? 20 : 6),
+            bottomRight: Radius.circular(isMe ? 6 : 20),
+          ),
           child: Image.network(
             imageUrl,
             fit: BoxFit.cover,
@@ -171,31 +182,39 @@ class TextMedia extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+      margin: const EdgeInsets.symmetric(vertical: 2, horizontal: 8),
       child: Material(
-        borderRadius: BorderRadius.circular(15),
+        borderRadius: BorderRadius.only(
+          topLeft: const Radius.circular(20),
+          topRight: const Radius.circular(20),
+          bottomLeft: Radius.circular(isMe ? 20 : 6),
+          bottomRight: Radius.circular(isMe ? 6 : 20),
+        ),
         color: isMe
             ? Theme.of(context).colorScheme.primary
-            : Theme.of(context).colorScheme.secondaryContainer,
+            : Theme.of(context).colorScheme.surfaceVariant,
+        elevation: 0,
         child: InkWell(
           onTap: onPress,
-          borderRadius: BorderRadius.circular(15),
+          borderRadius: BorderRadius.only(
+            topLeft: const Radius.circular(20),
+            topRight: const Radius.circular(20),
+            bottomLeft: Radius.circular(isMe ? 20 : 6),
+            bottomRight: Radius.circular(isMe ? 6 : 20),
+          ),
           child: Container(
               constraints: BoxConstraints(
-                  maxWidth: isMe
-                      ? constraints.maxWidth * 0.7
-                      : constraints.maxWidth * 0.6),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(15),
-              ),
-              padding: const EdgeInsets.all(8),
-              margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+                  maxWidth: constraints.maxWidth * 0.75),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               child: Text(
                 text,
                 softWrap: true,
                 style: TextStyle(
-                  color: isMe ? Colors.white : null,
-                  fontSize: 16,
+                  color: isMe 
+                      ? Theme.of(context).colorScheme.onPrimary
+                      : Theme.of(context).colorScheme.onSurfaceVariant,
+                  fontSize: 15,
+                  height: 1.3,
                 ),
               )),
         ),

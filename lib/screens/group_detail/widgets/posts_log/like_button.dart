@@ -19,11 +19,24 @@ class _LikeButtonState extends State<LikeButton> {
         setState(() {
         });
       },
-      icon: isLiked ? const Icon(Icons.thumb_up) : const Icon(Icons.thumb_up_alt_outlined),
-      label: const Text("Like"),
+      icon: Icon(
+        isLiked ? Icons.favorite_rounded : Icons.favorite_outline_rounded,
+        size: 18,
+        color: isLiked ? Colors.red : null,
+      ),
+      label: Text(
+        "Like",
+        style: TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
       style: TextButton.styleFrom(
-          shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8))),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+      ),
     );
   }
 

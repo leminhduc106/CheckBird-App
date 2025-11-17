@@ -5,23 +5,33 @@ class EmptyToDo extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        const SizedBox(height: 10),
-        Container(
-          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
-          decoration: BoxDecoration(
-            borderRadius: const BorderRadius.all(Radius.circular(10)),
-            color: Theme.of(context).colorScheme.primary,
-          ),
-          child: const Text(
-            "You have nothing to do",
-            style: TextStyle(
-                fontSize: 15, fontWeight: FontWeight.bold, color: Colors.white),
+    return Container(
+      margin: const EdgeInsets.all(32),
+      child: Card(
+        elevation: 0,
+        color: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.3),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.check_circle_outline_rounded,
+                size: 64,
+                color: Theme.of(context).colorScheme.primary.withOpacity(0.6),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                "You have no tasks for today",
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.8),
+                ),
+              ),
+            ],
           ),
         ),
-        const SizedBox(height: 10),
-      ],
+      ),
     );
   }
 }

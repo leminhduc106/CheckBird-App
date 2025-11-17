@@ -33,33 +33,50 @@ class _HomeScreenState extends State<HomeScreen> {
             onPressed: () {
               Scaffold.of(context).openDrawer();
             },
-            icon: const Icon(Icons.menu),
+            icon: const Icon(Icons.menu_rounded),
           ),
           centerTitle: true,
-          title: CircleAvatar(
-            backgroundColor: Colors.transparent,
+          title: Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
             child: Image.asset(
               'assets/images/checkbird-logo.png',
+              height: 32,
             ),
           ),
           actions: const [
             FocusButton(),
+            SizedBox(width: 8),
           ],
         ),
         body: SingleChildScrollView(
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const QuotesAPI(),
-              if (Authentication.user != null)
-                Container(
-                  margin: const EdgeInsets.only(
-                    left: 10,
+              if (Authentication.user != null) ...[
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Text(
+                    "Groups",
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
-                  height: size.height * 0.17,
+                ),
+                const SizedBox(height: 8),
+                Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 8),
+                  height: size.height * 0.12,
                   child: GroupList(changeTab: widget.changeTab!),
                 ),
-              const ShowDate(text: "To Do In Today"),
-              ToDoListToday(today: DateTime.now())
+              ],
+              const ShowDate(text: "Today's Tasks"),
+              ToDoListToday(today: DateTime.now()),
+              const SizedBox(height: 80), // Space for FAB
             ],
           ),
         ));

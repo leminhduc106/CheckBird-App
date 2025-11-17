@@ -14,11 +14,14 @@ class PostChatScreen extends StatelessWidget {
       appBar: AppBar(
         title: Text(posterName),
       ),
-      body: ChatWidget(
-          args: ChatScreenArguments(
-              chatType: ChatType.topicChat,
-              groupId: groupId,
-              topicId: postId)),
+      body: SafeArea(
+        bottom: false,
+        child: ChatWidget(
+            args: ChatScreenArguments(
+                chatType: ChatType.topicChat,
+                groupId: groupId,
+                topicId: postId)),
+      ),
     );
   }
 }

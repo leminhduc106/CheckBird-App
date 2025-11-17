@@ -5,7 +5,7 @@ import 'package:check_bird/screens/groups/models/groups_controller.dart';
 import 'package:flutter/material.dart';
 
 class GroupDetailScreen extends StatelessWidget {
-  const GroupDetailScreen({super.key, required this.group});
+  const GroupDetailScreen({Key? key, required this.group}) : super(key: key);
   static const routeName = '/chat-detail-screen';
   final Group group;
   @override
@@ -17,20 +17,44 @@ class GroupDetailScreen extends StatelessWidget {
         onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
         child: Scaffold(
           appBar: AppBar(
-            title:  Text(group.groupName),
-            bottom: const TabBar(
+            title: Text(group.groupName),
+            bottom: TabBar(
               tabs: [
-                Tab(icon: Icon(Icons.my_library_books)),
-                Tab(icon: Icon(Icons.chat_bubble_outlined)),
-                Tab(icon: Icon(Icons.info)),
+                Tab(
+                  icon: Icon(Icons.library_books_rounded),
+                  text: "Posts",
+                ),
+                Tab(
+                  icon: Icon(Icons.chat_bubble_rounded),
+                  text: "Chat",
+                ),
+                Tab(
+                  icon: Icon(Icons.info_rounded),
+                  text: "Info",
+                ),
               ],
+              labelStyle: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
+              unselectedLabelStyle: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w400,
+              ),
+              indicatorSize: TabBarIndicatorSize.label,
             ),
           ),
           body: TabBarView(
             children: [
-              GroupTopicTab(groupId: group.groupId,),
-              GroupChatTab(groupId: group.groupId,),
-              GroupInfoTab(group: group,),
+              GroupTopicTab(
+                groupId: group.groupId,
+              ),
+              GroupChatTab(
+                groupId: group.groupId,
+              ),
+              GroupInfoTab(
+                group: group,
+              ),
             ],
           ),
         ),
