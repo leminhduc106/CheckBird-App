@@ -28,111 +28,144 @@ class GroupItem extends StatelessWidget {
           groupDescription: data['groupDescription'],
           groupsAvtUrl: data['groupsAvtUrl'],
         );
-        return Center(
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
           child: Card(
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-            clipBehavior: Clip.antiAlias,
-            margin: const EdgeInsets.symmetric(vertical: 10),
+            elevation: 2,
+            color: Theme.of(context).colorScheme.surface,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
             child: InkWell(
+              borderRadius: BorderRadius.circular(16),
               onTap: () {
                 Navigator.of(context).push(MaterialPageRoute(
-                    builder: (context) => GroupDetailScreen(
-                          group: group,
-                        )));
+                    builder: (context) => GroupDetailScreen(group: group)));
               },
               child: Container(
-                padding: const EdgeInsets.all(10),
-                width: size.width * 0.9,
+                padding: const EdgeInsets.all(16),
                 child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            CircleAvatar(
-                              backgroundColor: Colors.grey,
-                              backgroundImage: group.groupsAvtUrl != null
-                                  ? Image.network(group.groupsAvtUrl!).image
-                                  : null,
-                            ),
-                            const SizedBox(
-                              width: 20,
-                            ),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                SizedBox(
-                                  width: size.width * 0.5,
-                                  height: 30,
-                                  child: Text(
-                                    group.groupName,
-                                    style: const TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 20),
-                                  ),
-                                ),
-                                Row(
-                                  children: [
-                                    Text('${group.numOfMember}'),
-                                    const Icon(Icons.group),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ],
+                    Container(
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: Theme.of(context)
+                              .colorScheme
+                              .primary
+                              .withOpacity(0.25),
+                          width: 2,
                         ),
-                        Row(
-                          children: [
-                            const Icon(Icons.info),
-                            const SizedBox(
-                              width: 10,
-                            ),
-                            Center(
-                              child: SizedBox(
-                                width: size.width * 0.6,
-                                height: 40,
+                      ),
+                      child: CircleAvatar(
+                        radius: 24,
+                        backgroundColor:
+                            Theme.of(context).colorScheme.surfaceVariant,
+                        backgroundImage: group.groupsAvtUrl != null
+                            ? Image.network(group.groupsAvtUrl!).image
+                            : null,
+                        child: group.groupsAvtUrl == null
+                            ? Icon(Icons.group,
+                                color: Theme.of(context).colorScheme.onSurface)
+                            : null,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              Expanded(
                                 child: Text(
-                                  group.groupDescription!,
-                                  softWrap: true,
+                                  group.groupName,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .titleMedium
+                                      ?.copyWith(fontWeight: FontWeight.w700),
                                 ),
                               ),
+                              FutureBuilder(
+                                future: GroupsController()
+                                    .isJoined(groupId: groupId),
+                                builder: (context, snapshot) {
+                                  final joined = snapshot.data == true;
+                                  return AnimatedContainer(
+                                    duration: const Duration(milliseconds: 200),
+                                    padding: const EdgeInsets.all(6),
+                                    decoration: BoxDecoration(
+                                      color: joined
+                                          ? Theme.of(context)
+                                              .colorScheme
+                                              .primary
+                                          : Colors.transparent,
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: joined
+                                          ? null
+                                          : Border.all(
+                                              color: Theme.of(context)
+                                                  .colorScheme
+                                                  .outline
+                                                  .withOpacity(0.4),
+                                            ),
+                                    ),
+                                    child: Icon(
+                                      joined
+                                          ? Icons.check_rounded
+                                          : Icons.add_rounded,
+                                      size: 18,
+                                      color: joined
+                                          ? Theme.of(context)
+                                              .colorScheme
+                                              .onPrimary
+                                          : Theme.of(context)
+                                              .colorScheme
+                                              .onSurface
+                                              .withOpacity(0.7),
+                                    ),
+                                  );
+                                },
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 6),
+                          if (group.groupDescription != null &&
+                              group.groupDescription!.isNotEmpty)
+                            Text(
+                              group.groupDescription!,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodyMedium
+                                  ?.copyWith(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurface
+                                        .withOpacity(0.7),
+                                  ),
                             ),
-                          ],
-                        ),
-                        Row(
-                          children: [
-                            const Icon(Icons.checklist),
-                            const SizedBox(
-                              width: 10,
-                            ),
-                            Text("${group.numOfTasks} task(s)"),
-                          ],
-                        )
-                      ],
-                    ),
-                    // Check if joined
-                    FutureBuilder(
-                      future: GroupsController().isJoined(groupId: groupId),
-                      builder:
-                          (BuildContext context, AsyncSnapshot<bool> snapshot) {
-                        if (snapshot.connectionState ==
-                            ConnectionState.waiting) {
-                          return const Center(
-                            child: CircularProgressIndicator(),
-                          );
-                        }
-                        return Container(
-                            padding: const EdgeInsets.all(10),
-                            child: Transform.scale(
-                                scale: 2.5,
-                                child: snapshot.data!
-                                    ? const Icon(Icons.check_box_rounded)
-                                    : const Icon(
-                                        Icons.check_box_outline_blank)));
-                      },
+                          const SizedBox(height: 10),
+                          Row(
+                            children: [
+                              _StatChip(
+                                icon: Icons.group,
+                                label: '${group.numOfMember}',
+                              ),
+                              const SizedBox(width: 8),
+                              _StatChip(
+                                icon: Icons.checklist_rtl,
+                                label: '${group.numOfTasks} task(s)',
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 ),
@@ -141,6 +174,43 @@ class GroupItem extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+}
+
+class _StatChip extends StatelessWidget {
+  const _StatChip({required this.icon, required this.label});
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.6),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: Theme.of(context).colorScheme.outline.withOpacity(0.25),
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon,
+              size: 14,
+              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7)),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                  color:
+                      Theme.of(context).colorScheme.onSurface.withOpacity(0.75),
+                  fontWeight: FontWeight.w600,
+                ),
+          ),
+        ],
+      ),
     );
   }
 }

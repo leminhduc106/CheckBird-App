@@ -40,30 +40,59 @@ class GroupScreen extends StatelessWidget {
             : Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Expanded(
-                    flex: 1,
-                    child: ListTile(
-                      contentPadding: const EdgeInsets.symmetric(
-                          vertical: 8, horizontal: 16),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(12),
                       onTap: () {
                         Navigator.of(context).push(MaterialPageRoute(
                             builder: (context) => const SearchGroupScreen()));
                       },
-                      title: TextField(
-                        enabled: false,
-                        decoration: InputDecoration(
-                          icon: const Icon(Icons.search),
-                          hintText: "Search for more groups...",
-                          disabledBorder: OutlineInputBorder(
-                            borderSide: BorderSide(
-                                width: 1, color: Theme.of(context).shadowColor),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 14, vertical: 12),
+                        decoration: BoxDecoration(
+                          color: Theme.of(context)
+                              .colorScheme
+                              .surfaceVariant
+                              .withOpacity(0.5),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: Theme.of(context)
+                                .colorScheme
+                                .outline
+                                .withOpacity(0.25),
                           ),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(Icons.search,
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onSurface
+                                    .withOpacity(0.6)),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                "Search for more groups...",
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodyMedium
+                                    ?.copyWith(
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onSurface
+                                          .withOpacity(0.6),
+                                    ),
+                              ),
+                            )
+                          ],
                         ),
                       ),
                     ),
                   ),
                   Expanded(
-                    flex: 9,
+                    flex: 1,
                     child: StreamBuilder(
                       stream: GroupsController().usersGroupsStream(),
                       builder: (BuildContext context,
@@ -81,7 +110,7 @@ class GroupScreen extends StatelessWidget {
                                 "Join some groups first! Or create one..."),
                           );
                         }
-                        return ListView.builder(
+                        return ListView.separated(
                           itemCount: data.length,
                           itemBuilder: (context, index) {
                             return GroupItem(
@@ -89,6 +118,8 @@ class GroupScreen extends StatelessWidget {
                               size: size,
                             );
                           },
+                          separatorBuilder: (_, __) =>
+                              const SizedBox(height: 8),
                         );
                       },
                     ),

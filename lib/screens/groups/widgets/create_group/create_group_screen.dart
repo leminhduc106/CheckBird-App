@@ -262,10 +262,42 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
                       final isJoined = snapshot.data!;
                       if (isJoined) {
                         return ElevatedButton.icon(
-                          onPressed: () {
-                            GroupsController()
-                                .unJoinGroup(widget.group!.groupId);
-                            Navigator.of(context).pop();
+                          onPressed: () async {
+                            final confirm = await showDialog<bool>(
+                              context: context,
+                              barrierDismissible: true,
+                              builder: (ctx) {
+                                return AlertDialog(
+                                  title: const Text('Leave group?'),
+                                  content: const Text(
+                                      'Are you sure you want to leave this group? You will lose access to posts, comments, and notifications.'),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () =>
+                                          Navigator.of(ctx).pop(false),
+                                      child: const Text('Cancel'),
+                                    ),
+                                    ElevatedButton(
+                                      onPressed: () =>
+                                          Navigator.of(ctx).pop(true),
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor:
+                                            Theme.of(ctx).colorScheme.error,
+                                        foregroundColor:
+                                            Theme.of(ctx).colorScheme.onError,
+                                      ),
+                                      child: const Text('Leave'),
+                                    ),
+                                  ],
+                                );
+                              },
+                            );
+                            if (confirm == true) {
+                              await GroupsController()
+                                  .unJoinGroup(widget.group!.groupId);
+                              if (!mounted) return;
+                              Navigator.of(this.context).pop();
+                            }
                           },
                           icon: const Icon(Icons.exit_to_app),
                           label: const Text("Leave group"),
