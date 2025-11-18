@@ -10,6 +10,7 @@ class Comment {
     required this.createdAt,
     required this.likeCount,
     this.isLegacy = false,
+    this.imageUrl,
   });
 
   final String id;
@@ -20,4 +21,5 @@ class Comment {
   final Timestamp createdAt;
   final int likeCount;
   final bool isLegacy;
+  final String? imageUrl;
 }

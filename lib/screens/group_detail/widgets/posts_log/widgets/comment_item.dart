@@ -1,5 +1,6 @@
 import 'package:check_bird/screens/group_detail/models/comment.dart';
 import 'package:check_bird/screens/group_detail/models/comments_controller.dart';
+import 'package:check_bird/widgets/chat/widgets/image_view_chat_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -139,10 +140,34 @@ class _CommentItemState extends State<CommentItem> {
                       ),
                       const SizedBox(height: 4),
                       // Comment Text
-                      Text(
-                        widget.comment.text,
-                        style: Theme.of(context).textTheme.bodyMedium,
-                      ),
+                      if (widget.comment.text.isNotEmpty)
+                        Text(
+                          widget.comment.text,
+                          style: Theme.of(context).textTheme.bodyMedium,
+                        ),
+                      if (widget.comment.imageUrl != null) ...[
+                        const SizedBox(height: 8),
+                        GestureDetector(
+                          onTap: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (context) => ImageViewChatScreen(
+                                  imageUrl: widget.comment.imageUrl!,
+                                ),
+                              ),
+                            );
+                          },
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(12),
+                            child: Image.network(
+                              widget.comment.imageUrl!,
+                              height: 160,
+                              width: double.infinity,
+                              fit: BoxFit.cover,
+                            ),
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                 ),

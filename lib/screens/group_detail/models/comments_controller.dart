@@ -1,7 +1,9 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:check_bird/screens/group_detail/models/comment.dart';
 import 'package:check_bird/services/authentication.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:ntp/ntp.dart';
 
 class CommentsController {
@@ -27,6 +29,7 @@ class CommentsController {
     required String groupId,
     required String postId,
     required String text,
+    File? imageFile,
   }) async {
     final commentsRef = _commentsRef(groupId, postId);
     final postRef = FirebaseFirestore.instance
@@ -37,6 +40,19 @@ class CommentsController {
     final user = Authentication.user!;
     final now = Timestamp.fromDate(await NTP.now());
     final displayName = (user.displayName ?? '').trim();
+    // Pre-generate comment doc ID so we can upload image first if needed
+    final newCommentRef = commentsRef.doc();
+    String? uploadedImageUrl;
+    if (imageFile != null) {
+      try {
+        final storagePath =
+            'groups/$groupId/posts/$postId/comments/${newCommentRef.id}.jpg';
+        final task = await FirebaseStorage.instance
+            .ref(storagePath)
+            .putFile(imageFile, SettableMetadata(contentType: 'image/jpeg'));
+        uploadedImageUrl = await task.ref.getDownloadURL();
+      } catch (e) {}
+    }
 
     await FirebaseFirestore.instance.runTransaction((transaction) async {
       final postSnapshot = await transaction.get(postRef);
@@ -47,9 +63,7 @@ class CommentsController {
       final chatCountValue = postData['chatCount'];
       final currentCount = chatCountValue is num ? chatCountValue.toInt() : 0;
 
-      // Add comment (all reads completed above)
-      final commentDoc = commentsRef.doc();
-      transaction.set(commentDoc, {
+      final commentData = <String, dynamic>{
         'text': text,
         'userId': user.uid,
         'userName': displayName.isNotEmpty
@@ -58,9 +72,12 @@ class CommentsController {
         'userAvatarUrl': user.photoURL ?? '',
         'createdAt': now,
         'likeCount': 0,
-      });
+      };
+      if (uploadedImageUrl != null) {
+        commentData['imageUrl'] = uploadedImageUrl;
+      }
 
-      // Update post comment count
+      transaction.set(newCommentRef, commentData);
       transaction.update(postRef, {
         'chatCount': currentCount + 1,
       });
@@ -142,6 +159,9 @@ class CommentsController {
           userAvatarUrl: (data['userAvatarUrl'] ?? '').toString(),
           createdAt: createdAt,
           likeCount: likeCount,
+          imageUrl: (data['imageUrl'] ?? '').toString().isEmpty
+              ? null
+              : (data['imageUrl'] as String),
         );
       }).toList();
       emit();

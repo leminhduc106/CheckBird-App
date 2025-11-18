@@ -3,6 +3,7 @@ import 'package:check_bird/screens/group_detail/widgets/posts_log/like_button.da
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:check_bird/widgets/chat/widgets/image_view_chat_screen.dart';
 
 class PostCard extends StatelessWidget {
   const PostCard({
@@ -108,9 +109,20 @@ class PostCard extends StatelessWidget {
                 child: Container(
                   constraints: const BoxConstraints(maxHeight: 300),
                   width: double.infinity,
-                  child: Image.network(
-                    post.posterImageUrl!,
-                    fit: BoxFit.cover,
+                  child: GestureDetector(
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => ImageViewChatScreen(
+                            imageUrl: post.posterImageUrl!,
+                          ),
+                        ),
+                      );
+                    },
+                    child: Image.network(
+                      post.posterImageUrl!,
+                      fit: BoxFit.cover,
+                    ),
                   ),
                 ),
               ),

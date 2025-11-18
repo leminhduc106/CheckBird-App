@@ -38,12 +38,9 @@ class PostItem extends StatelessWidget {
 
           final post = snapshot.data!;
           return Container(
-            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: PostCard(
-              post: post,
-              groupId: groupId,
-              postId: postId,
-              onCommentPressed: () {
+            margin: const EdgeInsets.fromLTRB(16, 6, 16, 10),
+            child: GestureDetector(
+              onTap: () => {
                 Navigator.of(context).push(
                   MaterialPageRoute(
                     builder: (_) => PostDetailScreen(
@@ -51,8 +48,23 @@ class PostItem extends StatelessWidget {
                       postId: postId,
                     ),
                   ),
-                );
+                )
               },
+              child: PostCard(
+                post: post,
+                groupId: groupId,
+                postId: postId,
+                onCommentPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => PostDetailScreen(
+                        groupId: groupId,
+                        postId: postId,
+                      ),
+                    ),
+                  );
+                },
+              ),
             ),
           );
         },
