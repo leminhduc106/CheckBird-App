@@ -68,7 +68,6 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
 
   @override
   Widget build(BuildContext context) {
-    Size size = MediaQuery.of(context).size;
     return GestureDetector(
       onTap: () {
         FocusManager.instance.primaryFocus!.unfocus();
@@ -149,7 +148,10 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                         child: CircleAvatar(
                           radius: 24,
                           backgroundImage:
-                              NetworkImage(Authentication.user!.photoURL!),
+                              (Authentication.user?.photoURL != null &&
+                                      Authentication.user!.photoURL!.isNotEmpty)
+                                  ? NetworkImage(Authentication.user!.photoURL!)
+                                  : null,
                         ),
                       ),
                       const SizedBox(width: 16),
@@ -222,23 +224,11 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                 const SizedBox(height: 20),
                 Row(
                   children: [
-                    Icon(
-                      Icons.image_rounded,
-                      color: Theme.of(context).colorScheme.primary,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      "Add Image",
-                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                            color: Theme.of(context).colorScheme.primary,
-                            fontWeight: FontWeight.w600,
-                          ),
-                    ),
                     const Spacer(),
                     if (_image == null)
                       FilledButton.icon(
                         icon: const Icon(Icons.add_photo_alternate_rounded),
-                        label: const Text("Add"),
+                        label: const Text("Add Image"),
                         onPressed: () async {
                           if (_focusNode.hasPrimaryFocus) {
                             _focusNode.unfocus();

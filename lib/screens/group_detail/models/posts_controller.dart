@@ -26,7 +26,7 @@ class PostsController {
         return Post(
           chatCount: data['chatCount'],
           likeCount: data['likeCount'],
-          posterAvatarUrl: data['posterAvatarUrl'],
+          posterAvatarUrl: (data['posterAvatarUrl'] ?? '').toString(),
           posterName: data['posterName'],
           id: post.id,
           posterEmail: data['posterEmail'],
@@ -53,7 +53,7 @@ class PostsController {
       results.add(Post(
         chatCount: data['chatCount'],
         likeCount: data['likeCount'],
-        posterAvatarUrl: data['posterAvatarUrl'],
+        posterAvatarUrl: (data['posterAvatarUrl'] ?? '').toString(),
         posterName: data['posterName'],
         id: element.id,
         posterEmail: data['posterEmail'],
@@ -161,7 +161,7 @@ class PostsController {
       return Post(
         chatCount: data['chatCount'],
         likeCount: data['likeCount'],
-        posterAvatarUrl: data['posterAvatarUrl'],
+        posterAvatarUrl: (data['posterAvatarUrl'] ?? '').toString(),
         posterName: data['posterName'],
         id: snapshot.id,
         posterEmail: data['posterEmail'],

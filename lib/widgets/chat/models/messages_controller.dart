@@ -110,7 +110,7 @@ class MessagesController {
       'userId': Authentication.user!.uid,
       'userName': Authentication.user!.displayName,
       'created': await NTP.now(),
-      'userImageUrl': Authentication.user!.photoURL,
+      'userImageUrl': Authentication.user!.photoURL ?? '',
     });
   }
 
@@ -133,7 +133,7 @@ class MessagesController {
           data: msgData['data'].toString(),
           isMe: Authentication.user!.uid == msgData['userId'],
           userId: msgData['userId'],
-          userImageUrl: msgData['userImageUrl'],
+          userImageUrl: (msgData['userImageUrl'] ?? '').toString(),
           userName: msgData['userName'],
         );
       }).toList();

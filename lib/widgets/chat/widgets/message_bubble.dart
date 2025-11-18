@@ -66,7 +66,9 @@ class _MessageBubbleState extends State<MessageBubble> {
                   Container(
                     margin: const EdgeInsets.all(10),
                     child: CircleAvatar(
-                      backgroundImage: NetworkImage(widget.photoUrl),
+                      backgroundImage: (widget.photoUrl.isNotEmpty)
+                          ? NetworkImage(widget.photoUrl)
+                          : null,
                     ),
                   ),
                 Expanded(
@@ -146,8 +148,7 @@ class ImageMedia extends StatelessWidget {
       child: Container(
         margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
         constraints: BoxConstraints(
-            maxWidth: constraints.maxWidth * 0.7,
-            maxHeight: 300),
+            maxWidth: constraints.maxWidth * 0.7, maxHeight: 300),
         child: ClipRRect(
           borderRadius: BorderRadius.only(
             topLeft: const Radius.circular(20),
@@ -203,14 +204,14 @@ class TextMedia extends StatelessWidget {
             bottomRight: Radius.circular(isMe ? 6 : 20),
           ),
           child: Container(
-              constraints: BoxConstraints(
-                  maxWidth: constraints.maxWidth * 0.75),
+              constraints:
+                  BoxConstraints(maxWidth: constraints.maxWidth * 0.75),
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               child: Text(
                 text,
                 softWrap: true,
                 style: TextStyle(
-                  color: isMe 
+                  color: isMe
                       ? Theme.of(context).colorScheme.onPrimary
                       : Theme.of(context).colorScheme.onSurfaceVariant,
                   fontSize: 15,

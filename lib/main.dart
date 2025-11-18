@@ -43,11 +43,15 @@ class AppInitializer extends StatelessWidget {
     // Lock portrait mode
     await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
 
-    // Hive setup
+    // Hive setup (guard against duplicate adapter registration on hot reload)
     Directory directory = await getApplicationDocumentsDirectory();
     await Hive.initFlutter(directory.path);
-    Hive.registerAdapter(TodoAdapter());
-    Hive.registerAdapter(TodoTypeAdapter());
+    if (!Hive.isAdapterRegistered(0)) {
+      Hive.registerAdapter(TodoAdapter());
+    }
+    if (!Hive.isAdapterRegistered(1)) {
+      Hive.registerAdapter(TodoTypeAdapter());
+    }
     await TodoListController().openBox();
 
     // Notifications

@@ -25,7 +25,10 @@ class GroupItem extends StatelessWidget {
                 backgroundColor: const Color(0xFF2196F3),
                 child: CircleAvatar(
                   radius: 35,
-                  backgroundImage: NetworkImage(group.groupsAvtUrl.toString()),
+                  backgroundImage: (group.groupsAvtUrl != null &&
+                          group.groupsAvtUrl!.isNotEmpty)
+                      ? NetworkImage(group.groupsAvtUrl!)
+                      : null,
                 ),
               ),
               Text(
