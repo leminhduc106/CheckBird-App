@@ -5,6 +5,7 @@ import 'package:check_bird/screens/groups/models/groups_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:image_cropper/image_cropper.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 enum AppState {
   free,
@@ -102,6 +103,7 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return GestureDetector(
       onTap: () {
         FocusManager.instance.primaryFocus?.unfocus();
@@ -117,7 +119,7 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
                   },
                 ),
                 title: const Text(
-                  "Create group",
+                  'Create group',
                   style: TextStyle(fontWeight: FontWeight.bold),
                 ),
                 actions: [
@@ -134,13 +136,11 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
                               Navigator.pop(context);
                             }
                           : null,
-                      child: Text(
-                        "Create group",
+                      child: const Text(
+                        'Create group',
                         style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: _hasContent
-                                ? Theme.of(context).colorScheme.background
-                                : null),
+                          fontWeight: FontWeight.bold,
+                        ),
                       )),
                 ],
               )
@@ -196,7 +196,7 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
                                   Text(
-                                    "Take an image",
+                                    'Take an image',
                                     style: TextStyle(
                                         fontWeight: FontWeight.bold,
                                         color: Colors.white),
@@ -216,7 +216,7 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
                     onPressed: () {
                       _clearImage();
                     },
-                    child: const Text("Clear image"),
+                    child: const Text('Clear image'),
                   ),
                 TextField(
                   enabled: widget.group == null,
@@ -268,14 +268,15 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
                               barrierDismissible: true,
                               builder: (ctx) {
                                 return AlertDialog(
-                                  title: const Text('Leave group?'),
-                                  content: const Text(
-                                      'Are you sure you want to leave this group? You will lose access to posts, comments, and notifications.'),
+                                  title: Text(l10n?.leaveGroupQuestion ??
+                                      'Leave group?'),
+                                  content: Text(l10n?.leaveGroupWarning ??
+                                      'Are you sure you want to leave this group?'),
                                   actions: [
                                     TextButton(
                                       onPressed: () =>
                                           Navigator.of(ctx).pop(false),
-                                      child: const Text('Cancel'),
+                                      child: Text(l10n?.cancel ?? 'Cancel'),
                                     ),
                                     ElevatedButton(
                                       onPressed: () =>
@@ -286,7 +287,7 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
                                         foregroundColor:
                                             Theme.of(ctx).colorScheme.onError,
                                       ),
-                                      child: const Text('Leave'),
+                                      child: Text(l10n?.leaveGroup ?? 'Leave'),
                                     ),
                                   ],
                                 );
@@ -300,7 +301,7 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
                             }
                           },
                           icon: const Icon(Icons.exit_to_app),
-                          label: const Text("Leave group"),
+                          label: Text(l10n?.leaveGroup ?? 'Leave group'),
                         );
                       } else {
                         return ElevatedButton.icon(
@@ -309,7 +310,7 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
                             Navigator.of(context).pop();
                           },
                           icon: const Icon(Icons.add_box),
-                          label: const Text("Join group"),
+                          label: Text(l10n?.joinGroup ?? 'Join group'),
                         );
                       }
                     },

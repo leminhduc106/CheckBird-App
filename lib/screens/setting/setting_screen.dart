@@ -1,8 +1,11 @@
 import 'package:check_bird/services/authentication.dart';
 import 'package:check_bird/utils/theme.dart';
+import 'package:check_bird/utils/locale_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_settings_screens/flutter_settings_screens.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:provider/provider.dart';
 
 class SettingScreen extends StatefulWidget {
   static const keyLanguage = 'key-language';
@@ -15,23 +18,70 @@ class SettingScreen extends StatefulWidget {
 }
 
 class _SettingScreenState extends State<SettingScreen> {
+  Future<void> _showLanguagePicker(LocaleController controller) async {
+    final l10n = AppLocalizations.of(context)!;
+    final current = controller.locale.languageCode;
+    await showModalBottomSheet(
+      context: context,
+      useSafeArea: true,
+      showDragHandle: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (ctx) {
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Text('🇺🇸', style: TextStyle(fontSize: 24)),
+              title: Text(l10n.english),
+              trailing: current == 'en'
+                  ? Icon(Icons.check_rounded,
+                      color: Theme.of(context).colorScheme.primary)
+                  : null,
+              onTap: () {
+                controller.setLocale(const Locale('en'));
+                Navigator.of(ctx).pop();
+              },
+            ),
+            ListTile(
+              leading: const Text('🇻🇳', style: TextStyle(fontSize: 24)),
+              title: Text(l10n.vietnamese),
+              trailing: current == 'vi'
+                  ? Icon(Icons.check_rounded,
+                      color: Theme.of(context).colorScheme.primary)
+                  : null,
+              onTap: () {
+                controller.setLocale(const Locale('vi'));
+                Navigator.of(ctx).pop();
+              },
+            ),
+            const SizedBox(height: 48),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) => Scaffold(
         appBar: AppBar(
-            title: const Text("Settings"), automaticallyImplyLeading: true),
+            title: Text(AppLocalizations.of(context)!.settingsTitle),
+            automaticallyImplyLeading: true),
         body: SafeArea(
           child: ListView(
             padding: const EdgeInsets.symmetric(vertical: 24),
             children: [
               SettingsGroup(
-                title: 'GENERAL',
+                title: AppLocalizations.of(context)!.generalSection,
                 children: <Widget>[
+                  buildLanguages(),
                   buildDarkMode(),
                 ],
               ),
               const SizedBox(height: 16),
               SettingsGroup(
-                title: "FEEDBACK",
+                title: AppLocalizations.of(context)!.feedbackSection,
                 children: <Widget>[
                   buildFeedBack(),
                   buildReportBug(),
@@ -39,7 +89,7 @@ class _SettingScreenState extends State<SettingScreen> {
               ),
               const SizedBox(height: 16),
               SettingsGroup(
-                title: "ACCOUNT",
+                title: AppLocalizations.of(context)!.accountSection,
                 children: <Widget>[
                   buildDeleteAccount(),
                 ],
@@ -53,14 +103,14 @@ class _SettingScreenState extends State<SettingScreen> {
         margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
         child: ListTile(
           title: Text(
-            "Send Feedback",
+            AppLocalizations.of(context)!.sendFeedback,
             style: TextStyle(
               fontWeight: FontWeight.w500,
               color: Theme.of(context).colorScheme.onSurface,
             ),
           ),
           subtitle: Text(
-            "Help us improve the app",
+            AppLocalizations.of(context)!.helpImprove,
             style: TextStyle(
               color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
             ),
@@ -90,14 +140,14 @@ class _SettingScreenState extends State<SettingScreen> {
         margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
         child: ListTile(
           title: Text(
-            "Report Bug",
+            AppLocalizations.of(context)!.reportBug,
             style: TextStyle(
               fontWeight: FontWeight.w500,
               color: Theme.of(context).colorScheme.onSurface,
             ),
           ),
           subtitle: Text(
-            "Report issues you encounter",
+            AppLocalizations.of(context)!.reportIssues,
             style: TextStyle(
               color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
             ),
@@ -127,14 +177,14 @@ class _SettingScreenState extends State<SettingScreen> {
         margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
         child: ListTile(
           title: Text(
-            "Delete Account",
+            AppLocalizations.of(context)!.deleteAccount,
             style: TextStyle(
               fontWeight: FontWeight.w500,
               color: Theme.of(context).colorScheme.error,
             ),
           ),
           subtitle: Text(
-            "Permanently delete your account",
+            AppLocalizations.of(context)!.deleteAccountDesc,
             style: TextStyle(
               color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
             ),
@@ -164,15 +214,15 @@ class _SettingScreenState extends State<SettingScreen> {
                     color: Theme.of(context).colorScheme.error,
                     size: 32,
                   ),
-                  title: const Text('Delete Account?'),
-                  content: const Text(
-                      '''This action cannot be undone. Your account and all associated data will be permanently deleted from our servers.'''),
+                  title: Text(AppLocalizations.of(context)!.deleteAccount),
+                  content:
+                      Text(AppLocalizations.of(context)!.deleteAccountDesc),
                   actions: [
                     TextButton(
                       onPressed: () {
                         Navigator.of(contextDialog).pop();
                       },
-                      child: const Text('Cancel'),
+                      child: Text(AppLocalizations.of(context)!.cancel),
                     ),
                     FilledButton(
                       style: FilledButton.styleFrom(
@@ -184,7 +234,7 @@ class _SettingScreenState extends State<SettingScreen> {
                         if (!context.mounted) return;
                         Navigator.of(context).pop();
                       },
-                      child: const Text('Delete'),
+                      child: Text(AppLocalizations.of(context)!.delete),
                     ),
                   ],
                 );
@@ -194,19 +244,49 @@ class _SettingScreenState extends State<SettingScreen> {
         ),
       );
 
-  Widget buildLanguages() => DropDownSettingsTile(
-        settingKey: SettingScreen.keyLanguage,
-        title: "Languages",
-        selected: 1,
-        values: const <int, String>{
-          1: "English",
-          2: "Vietnamese",
-        },
-        onChange: (language) {/* */},
-      );
+  Widget buildLanguages() {
+    final controller = Provider.of<LocaleController>(context, listen: true);
+    final l10n = AppLocalizations.of(context)!;
+    final isVi = controller.locale.languageCode == 'vi';
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+      child: ListTile(
+        title: Text(
+          l10n.languages,
+          style: TextStyle(
+            fontWeight: FontWeight.w500,
+            color: Theme.of(context).colorScheme.onSurface,
+          ),
+        ),
+        subtitle: Text(
+          isVi ? l10n.vietnamese : l10n.english,
+          style: TextStyle(
+            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+          ),
+        ),
+        leading: Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.primaryContainer,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(
+            Icons.language_rounded,
+            color: Theme.of(context).colorScheme.onPrimaryContainer,
+            size: 20,
+          ),
+        ),
+        trailing: const Icon(Icons.chevron_right_rounded),
+        onTap: () => _showLanguagePicker(controller),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+      ),
+    );
+  }
 
   Widget buildDarkMode() => SwitchSettingsTile(
-        title: "Dark mode",
+        title: AppLocalizations.of(context)!.darkMode,
         settingKey: SettingScreen.keyDarkMode,
         onChange: (value) async {
           debugPrint('key-check-box-dev-mode: $value');

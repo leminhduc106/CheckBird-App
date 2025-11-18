@@ -2,6 +2,7 @@ import 'package:check_bird/screens/about/widgets/member_info.dart';
 import 'package:check_bird/screens/about/widgets/play_video_url.dart';
 import 'package:video_player/video_player.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class AboutScreen extends StatelessWidget {
   const AboutScreen({super.key});
@@ -9,10 +10,10 @@ class AboutScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    Size size = MediaQuery.of(context).size;
+    final l10n = AppLocalizations.of(context);
     return Scaffold(
       appBar: AppBar(
-        title: const Text("About Us"),
+        title: Text(l10n?.aboutUs ?? 'About Us'),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -35,26 +36,32 @@ class AboutScreen extends StatelessWidget {
                     const SizedBox(height: 16),
                     Text(
                       "Techlosophy",
-                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        color: Theme.of(context).colorScheme.onPrimaryContainer,
-                        fontWeight: FontWeight.w700,
-                      ),
+                      style:
+                          Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onPrimaryContainer,
+                                fontWeight: FontWeight.w700,
+                              ),
                     ),
                     const SizedBox(height: 12),
                     Text(
                       "Our core values are to bring about happiness to everyone!",
                       textAlign: TextAlign.center,
                       style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        color: Theme.of(context).colorScheme.onPrimaryContainer.withOpacity(0.9),
-                        height: 1.5,
-                      ),
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onPrimaryContainer
+                                .withOpacity(0.9),
+                            height: 1.5,
+                          ),
                     ),
                   ],
                 ),
               ),
             ),
             const SizedBox(height: 24),
-            
+
             // Video section with modern styling
             Container(
               width: double.infinity,
@@ -79,23 +86,26 @@ class AboutScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 32),
-            
+
             // Team section header
             Text(
               "Meet Our Team",
               style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
+                    fontWeight: FontWeight.w600,
+                  ),
             ),
             const SizedBox(height: 8),
             Text(
               "The talented individuals behind CheckBird",
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
-              ),
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onSurface
+                        .withOpacity(0.7),
+                  ),
             ),
             const SizedBox(height: 24),
-            
+
             // Team leader
             const MemberInformation(
                 image: "assets/images/Phuoc.jpg",
@@ -103,7 +113,7 @@ class AboutScreen extends StatelessWidget {
                 id: "19127519",
                 isLeader: true),
             const SizedBox(height: 16),
-            
+
             Row(
               children: [
                 Expanded(
@@ -124,7 +134,7 @@ class AboutScreen extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 16),
-            
+
             Row(
               children: [
                 Expanded(

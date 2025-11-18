@@ -27,7 +27,6 @@ class TodoItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    Size size = MediaQuery.of(context).size;
     return AnimatedOpacity(
       opacity: todo.isCompleted ? 0.6 : 1.0,
       duration: const Duration(milliseconds: 200),
@@ -49,8 +48,12 @@ class TodoItem extends StatelessWidget {
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(16),
-                border: todo.isCompleted 
-                    ? Border.all(color: Theme.of(context).colorScheme.outline.withOpacity(0.5))
+                border: todo.isCompleted
+                    ? Border.all(
+                        color: Theme.of(context)
+                            .colorScheme
+                            .outline
+                            .withOpacity(0.5))
                     : null,
               ),
               child: Column(
@@ -60,24 +63,31 @@ class TodoItem extends StatelessWidget {
                     children: [
                       // Type indicator
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
                           color: todo.type == TodoType.habit
                               ? Theme.of(context).colorScheme.tertiaryContainer
-                              : Theme.of(context).colorScheme.secondaryContainer,
+                              : Theme.of(context)
+                                  .colorScheme
+                                  .secondaryContainer,
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Icon(
-                              todo.type == TodoType.habit 
-                                  ? Icons.repeat_rounded 
+                              todo.type == TodoType.habit
+                                  ? Icons.repeat_rounded
                                   : Icons.task_alt_rounded,
                               size: 16,
                               color: todo.type == TodoType.habit
-                                  ? Theme.of(context).colorScheme.onTertiaryContainer
-                                  : Theme.of(context).colorScheme.onSecondaryContainer,
+                                  ? Theme.of(context)
+                                      .colorScheme
+                                      .onTertiaryContainer
+                                  : Theme.of(context)
+                                      .colorScheme
+                                      .onSecondaryContainer,
                             ),
                             const SizedBox(width: 4),
                             Text(
@@ -86,8 +96,12 @@ class TodoItem extends StatelessWidget {
                                 fontSize: 12,
                                 fontWeight: FontWeight.w500,
                                 color: todo.type == TodoType.habit
-                                    ? Theme.of(context).colorScheme.onTertiaryContainer
-                                    : Theme.of(context).colorScheme.onSecondaryContainer,
+                                    ? Theme.of(context)
+                                        .colorScheme
+                                        .onTertiaryContainer
+                                    : Theme.of(context)
+                                        .colorScheme
+                                        .onSecondaryContainer,
                               ),
                             ),
                           ],
@@ -96,7 +110,8 @@ class TodoItem extends StatelessWidget {
                       const Spacer(),
                       // Time/Date indicator
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
                           color: Theme.of(context).colorScheme.primaryContainer,
                           borderRadius: BorderRadius.circular(12),
@@ -105,11 +120,13 @@ class TodoItem extends StatelessWidget {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Icon(
-                              todo.type == TodoType.habit 
+                              todo.type == TodoType.habit
                                   ? Icons.calendar_view_week_rounded
                                   : Icons.access_time_rounded,
                               size: 14,
-                              color: Theme.of(context).colorScheme.onPrimaryContainer,
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onPrimaryContainer,
                             ),
                             const SizedBox(width: 4),
                             Text(
@@ -119,7 +136,9 @@ class TodoItem extends StatelessWidget {
                               style: TextStyle(
                                 fontSize: 11,
                                 fontWeight: FontWeight.w500,
-                                color: Theme.of(context).colorScheme.onPrimaryContainer,
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onPrimaryContainer,
                               ),
                             ),
                           ],
@@ -149,7 +168,7 @@ class TodoItem extends StatelessWidget {
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
                       color: Color(todo.textColor),
-                      decoration: todo.isCompleted 
+                      decoration: todo.isCompleted
                           ? TextDecoration.lineThrough
                           : TextDecoration.none,
                       decorationColor: Color(todo.textColor).withOpacity(0.6),

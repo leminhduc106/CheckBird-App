@@ -2,6 +2,7 @@ import 'package:check_bird/screens/group_detail/group_detail_screen.dart';
 import 'package:check_bird/screens/groups/models/groups_controller.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class GroupItem extends StatelessWidget {
   const GroupItem({super.key, required this.groupId, required this.size});
@@ -10,6 +11,7 @@ class GroupItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return StreamBuilder(
       stream: GroupsController().groupStream(groupId: groupId),
       builder: (BuildContext context,
@@ -155,12 +157,14 @@ class GroupItem extends StatelessWidget {
                             children: [
                               _StatChip(
                                 icon: Icons.group,
-                                label: '${group.numOfMember}',
+                                label: l10n?.membersCount(group.numOfMember) ??
+                                    '${group.numOfMember}',
                               ),
                               const SizedBox(width: 8),
                               _StatChip(
                                 icon: Icons.checklist_rtl,
-                                label: '${group.numOfTasks} task(s)',
+                                label: l10n?.tasksCount(group.numOfTasks) ??
+                                    '${group.numOfTasks} task(s)',
                               ),
                             ],
                           ),

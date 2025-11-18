@@ -2,13 +2,14 @@ import 'package:check_bird/screens/about/about_screen.dart';
 import 'package:check_bird/screens/setting/setting_screen.dart';
 import 'package:check_bird/services/authentication.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class AppDrawer extends StatelessWidget {
   const AppDrawer({super.key});
 
   @override
   Widget build(BuildContext context) {
-    Size size = MediaQuery.of(context).size;
+    final l10n = AppLocalizations.of(context);
     return Drawer(
       child: Column(
         children: [
@@ -35,7 +36,10 @@ class AppDrawer extends StatelessWidget {
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         border: Border.all(
-                          color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.3),
+                          color: Theme.of(context)
+                              .colorScheme
+                              .onPrimary
+                              .withOpacity(0.3),
                           width: 3,
                         ),
                       ),
@@ -57,7 +61,8 @@ class AppDrawer extends StatelessWidget {
                     const SizedBox(height: 16),
                     // User name
                     Text(
-                      Authentication.user?.displayName ?? "Guest User",
+                      Authentication.user?.displayName ??
+                          (l10n?.guestUser ?? 'Guest User'),
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.w600,
@@ -69,10 +74,14 @@ class AppDrawer extends StatelessWidget {
                     const SizedBox(height: 4),
                     // User email
                     Text(
-                      Authentication.user?.email ?? "Not signed in",
+                      Authentication.user?.email ??
+                          (l10n?.notSignedIn ?? 'Not signed in'),
                       style: TextStyle(
                         fontSize: 14,
-                        color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.8),
+                        color: Theme.of(context)
+                            .colorScheme
+                            .onPrimary
+                            .withOpacity(0.8),
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -91,7 +100,7 @@ class AppDrawer extends StatelessWidget {
                 _buildDrawerItem(
                   context: context,
                   icon: Icons.settings_rounded,
-                  title: "Settings",
+                  title: l10n?.settingsTitle ?? 'Settings',
                   onTap: () {
                     Navigator.of(context).pop();
                     Navigator.of(context).pushNamed(SettingScreen.routeName);
@@ -100,7 +109,7 @@ class AppDrawer extends StatelessWidget {
                 _buildDrawerItem(
                   context: context,
                   icon: Icons.info_rounded,
-                  title: "About Us",
+                  title: l10n?.aboutUs ?? 'About Us',
                   onTap: () {
                     Navigator.of(context).pop();
                     Navigator.of(context).pushNamed(AboutScreen.routeName);
@@ -110,7 +119,7 @@ class AppDrawer extends StatelessWidget {
                 _buildDrawerItem(
                   context: context,
                   icon: Icons.logout_rounded,
-                  title: "Logout",
+                  title: l10n?.logout ?? 'Logout',
                   textColor: Theme.of(context).colorScheme.error,
                   onTap: () async {
                     Navigator.of(context).pop();

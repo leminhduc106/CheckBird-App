@@ -22,6 +22,9 @@ import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_settings_screens/flutter_settings_screens.dart';
 import 'models/todo/todo_type.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'utils/locale_controller.dart';
 import 'utils/theme.dart';
 import 'firebase_options.dart';
 
@@ -83,8 +86,11 @@ class AppInitializer extends StatelessWidget {
           );
         }
 
-        return ChangeNotifierProvider(
-          create: (_) => AppTheme(),
+        return MultiProvider(
+          providers: [
+            ChangeNotifierProvider(create: (_) => AppTheme()),
+            ChangeNotifierProvider(create: (_) => LocaleController()),
+          ],
           child: const MyApp(),
         );
       },
@@ -97,10 +103,20 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final localeController =
+        Provider.of<LocaleController>(context, listen: true);
     return MaterialApp(
-      title: 'CheckBird',
+      title: AppLocalizations.of(context)?.appTitle ?? 'CheckBird',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.of(context, listen: true).getCurrentTheme(),
+      locale: localeController.locale,
+      supportedLocales: AppLocalizations.supportedLocales,
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
       initialRoute: WelcomeScreen.routeName,
       routes: {
         SettingScreen.routeName: (context) => const SettingScreen(),

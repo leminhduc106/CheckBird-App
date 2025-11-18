@@ -6,6 +6,7 @@ import 'package:check_bird/services/authentication.dart';
 import 'package:check_bird/widgets/focus/focus_widget.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class GroupScreen extends StatelessWidget {
   static const routeName = '/groups-screen';
@@ -14,6 +15,7 @@ class GroupScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     Size size = MediaQuery.of(context).size;
     return Scaffold(
       appBar: AppBar(
@@ -23,7 +25,7 @@ class GroupScreen extends StatelessWidget {
           },
           icon: const Icon(Icons.menu),
         ),
-        title: const Text("Group"),
+        title: Text(l10n?.groupTitle ?? 'Group'),
         actions: [
           IconButton(
               onPressed: () {
@@ -36,7 +38,8 @@ class GroupScreen extends StatelessWidget {
       ),
       body: Center(
         child: Authentication.user == null
-            ? const Text("You need to login to use this feature")
+            ? Text(
+                l10n?.loginRequired ?? 'You need to login to use this feature')
             : Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -74,7 +77,8 @@ class GroupScreen extends StatelessWidget {
                             const SizedBox(width: 8),
                             Expanded(
                               child: Text(
-                                "Search for more groups...",
+                                l10n?.searchGroupsPlaceholder ??
+                                    'Search for more groups...',
                                 style: Theme.of(context)
                                     .textTheme
                                     .bodyMedium
@@ -105,9 +109,9 @@ class GroupScreen extends StatelessWidget {
                         }
                         final data = snapshot.data?.docs;
                         if (data == null || data.isEmpty) {
-                          return const Center(
-                            child: Text(
-                                "Join some groups first! Or create one..."),
+                          return Center(
+                            child: Text(l10n?.noGroupsMessage ??
+                                'Join some groups first! Or create one...'),
                           );
                         }
                         return ListView.separated(

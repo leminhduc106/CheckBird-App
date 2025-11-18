@@ -24,19 +24,6 @@ class _MessageInputState extends State<MessageInput> {
   final _controller = TextEditingController();
   final _focusNode = FocusNode();
   var _enteredMessages = "";
-  final _hintTextUnfocused = const Text(
-    "Aa...",
-    style: TextStyle(
-      fontSize: 20,
-      letterSpacing: 2,
-    ),
-  );
-  final _hintTextFocused = const Text(
-    "Input messages to send...",
-    style: TextStyle(
-      fontSize: 13,
-    ),
-  );
   var focused = false;
 
   Future<File?> _cropImage(File image) async {
