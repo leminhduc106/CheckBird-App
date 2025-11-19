@@ -1,6 +1,7 @@
 import 'package:check_bird/models/todo/todo.dart';
 import 'package:check_bird/models/todo/todo_type.dart';
 import 'package:check_bird/screens/create_task/create_todo_screen.dart';
+import 'package:check_bird/services/rewards_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -27,6 +28,7 @@ class TodoItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isGroupTask = todo.groupId != null;
     return AnimatedOpacity(
       opacity: todo.isCompleted ? 0.6 : 1.0,
       duration: const Duration(milliseconds: 200),
@@ -108,6 +110,41 @@ class TodoItem extends StatelessWidget {
                         ),
                       ),
                       const Spacer(),
+                      if (isGroupTask)
+                        Container(
+                          margin: const EdgeInsets.only(right: 8),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: Theme.of(context)
+                                .colorScheme
+                                .secondaryContainer,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.group_rounded,
+                                size: 14,
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onSecondaryContainer,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                'Group task',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w500,
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onSecondaryContainer,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                       // Time/Date indicator
                       Container(
                         padding: const EdgeInsets.symmetric(
@@ -152,8 +189,22 @@ class TodoItem extends StatelessWidget {
                           child: Checkbox(
                             value: todo.isCompleted,
                             shape: const CircleBorder(),
-                            onChanged: (_) {
+                            onChanged: (_) async {
+                              final wasCompleted = todo.isCompleted;
                               todo.toggleCompleted();
+                              if (!wasCompleted && todo.isCompleted) {
+                                RewardsController().addCoins(1);
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      isGroupTask
+                                          ? 'Shared your progress with the group and earned +1 coin!'
+                                          : '+1 coin for completing a task!',
+                                    ),
+                                    duration: const Duration(seconds: 1),
+                                  ),
+                                );
+                              }
                             },
                           ),
                         ),

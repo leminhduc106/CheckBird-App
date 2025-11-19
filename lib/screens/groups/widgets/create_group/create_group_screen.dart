@@ -125,7 +125,7 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
                 actions: [
                   TextButton(
                       style: TextButton.styleFrom(
-                        foregroundColor: Colors.black12,
+                        foregroundColor: Colors.white,
                         backgroundColor: _hasContent
                             ? Theme.of(context).primaryColor
                             : Theme.of(context).colorScheme.secondaryContainer,
@@ -199,11 +199,11 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
                                     'Take an image',
                                     style: TextStyle(
                                         fontWeight: FontWeight.bold,
-                                        color: Colors.white),
+                                        color: Colors.black12),
                                   ),
                                   Icon(
                                     Icons.image,
-                                    color: Colors.white,
+                                    color: Colors.black12,
                                   )
                                 ],
                               )
@@ -224,7 +224,7 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
                   focusNode: _nameFocus,
                   maxLength: 50,
                   decoration: const InputDecoration(
-                      hintText: "enter group's name...",
+                      hintText: "Enter group's name",
                       labelText: "Group's name"),
                   onChanged: (value) {
                     setState(() {
@@ -239,7 +239,7 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
                   keyboardType: TextInputType.multiline,
                   maxLines: null,
                   decoration: const InputDecoration(
-                      hintText: "enter group's description...",
+                      hintText: "Enter group's description",
                       labelText: "Group's description"),
                   onChanged: (value) {
                     setState(() {

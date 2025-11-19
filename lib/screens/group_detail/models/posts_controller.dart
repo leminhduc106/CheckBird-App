@@ -14,13 +14,7 @@ class PostsController {
         .doc(groupId)
         .collection('post')
         .orderBy('createdAt', descending: true);
-    return ref.snapshots().distinct((oldDoc, newDoc) {
-      var newDocs = newDoc.docs.toList();
-      if (newDocs[0].data()['posterId'] == Authentication.user!.uid) {
-        return false;
-      }
-      return true;
-    }).map((element) {
+    return ref.snapshots().map((element) {
       return element.docs.map((post) {
         final data = post.data();
         return Post(
@@ -34,6 +28,8 @@ class PostsController {
           createdAt: data['createdAt'],
           posterImageUrl: data['posterImageUrl'],
           postText: data['postText'],
+          type: (data['type'] ?? 'manual') as String,
+          todoTitle: data['todoTitle'],
         );
       }).toList();
     });
@@ -61,6 +57,8 @@ class PostsController {
         createdAt: data['createdAt'],
         posterImageUrl: data['posterImageUrl'],
         postText: data['postText'],
+        type: (data['type'] ?? 'manual') as String,
+        todoTitle: data['todoTitle'],
       ));
     }
     return results;
@@ -147,7 +145,58 @@ class PostsController {
       'posterImageUrl': imgUrl,
       'posterId': Authentication.user!.uid,
       'posterEmail': Authentication.user!.email,
+      'type': 'manual',
     });
+  }
+
+  Future<void> createCompletionPost({
+    required String groupId,
+    required String todoName,
+  }) async {
+    final db = FirebaseFirestore.instance;
+    final ref = db.collection('groups').doc(groupId).collection('post');
+
+    await ref.add({
+      'createdAt': await NTP.now(),
+      'chatCount': 0,
+      'likeCount': 0,
+      'posterAvatarUrl': Authentication.user!.photoURL,
+      'posterName': Authentication.user!.displayName,
+      'postText': 'Completed: $todoName',
+      'todoTitle': todoName,
+      'posterImageUrl': null,
+      'posterId': Authentication.user!.uid,
+      'posterEmail': Authentication.user!.email,
+      'type': 'completion',
+    });
+  }
+
+  Future<void> deletePost({
+    required String groupId,
+    required String postId,
+  }) async {
+    final db = FirebaseFirestore.instance;
+
+    // Delete the post document
+    await db
+        .collection('groups')
+        .doc(groupId)
+        .collection('post')
+        .doc(postId)
+        .delete();
+
+    // Also delete the likers subcollection if it exists
+    final likersRef = db
+        .collection('groups')
+        .doc(groupId)
+        .collection('post')
+        .doc(postId)
+        .collection('liker');
+
+    final likersSnapshot = await likersRef.get();
+    for (final doc in likersSnapshot.docs) {
+      await doc.reference.delete();
+    }
   }
 
   Stream<Post> postStream({required String groupId, required String postId}) {
@@ -169,6 +218,8 @@ class PostsController {
         createdAt: data['createdAt'],
         posterImageUrl: data['posterImageUrl'],
         postText: data['postText'],
+        type: (data['type'] ?? 'manual') as String,
+        todoTitle: data['todoTitle'],
       );
     });
   }

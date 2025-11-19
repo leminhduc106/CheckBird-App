@@ -12,6 +12,8 @@ class Post {
     required this.id,
     required this.posterEmail,
     required this.posterId,
+    this.type = 'manual',
+    this.todoTitle,
   });
 
   Timestamp? createdAt;
@@ -24,4 +26,6 @@ class Post {
   int likeCount;
   int chatCount;
   String? id; // only needed when interacting with post
+  String type; // 'manual' | 'completion' | ...
+  String? todoTitle; // for completion posts
 }

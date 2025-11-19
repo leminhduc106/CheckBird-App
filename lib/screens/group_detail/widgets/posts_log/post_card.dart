@@ -1,5 +1,7 @@
 import 'package:check_bird/screens/group_detail/models/post.dart';
 import 'package:check_bird/screens/group_detail/widgets/posts_log/like_button.dart';
+import 'package:check_bird/screens/group_detail/models/posts_controller.dart';
+import 'package:check_bird/services/authentication.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -32,8 +34,60 @@ class PostCard extends StatelessWidget {
     return sendTimeFormat.add_yMMMd().format(createdAt);
   }
 
+  void _showDeleteConfirmation(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Delete Post'),
+          content: const Text(
+              'Are you sure you want to delete this post? This action cannot be undone.'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () async {
+                Navigator.of(context).pop();
+                try {
+                  await PostsController().deletePost(
+                    groupId: groupId,
+                    postId: postId,
+                  );
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Post deleted successfully'),
+                        backgroundColor: Colors.green,
+                      ),
+                    );
+                  }
+                } catch (e) {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Failed to delete post: $e'),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  }
+                }
+              },
+              style: FilledButton.styleFrom(
+                backgroundColor: Theme.of(context).colorScheme.error,
+              ),
+              child: const Text('Delete'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final isCompletion = post.type == 'completion';
     return Card(
       elevation: 2,
       color: Theme.of(context).colorScheme.surface,
@@ -53,7 +107,7 @@ class PostCard extends StatelessWidget {
                       color: Theme.of(context)
                           .colorScheme
                           .primary
-                          .withOpacity(0.3),
+                          .withValues(alpha: 0.3),
                       width: 2,
                     ),
                   ),
@@ -83,16 +137,82 @@ class PostCard extends StatelessWidget {
                               color: Theme.of(context)
                                   .colorScheme
                                   .onSurface
-                                  .withOpacity(0.6),
+                                  .withValues(alpha: 0.6),
                             ),
                       ),
                     ],
                   ),
                 ),
+                // Delete menu for post owner
+                if (Authentication.user?.uid == post.posterId)
+                  PopupMenuButton<String>(
+                    icon: Icon(
+                      Icons.more_vert_rounded,
+                      color: Theme.of(context)
+                          .colorScheme
+                          .onSurface
+                          .withValues(alpha: 0.6),
+                    ),
+                    onSelected: (value) async {
+                      if (value == 'delete') {
+                        _showDeleteConfirmation(context);
+                      }
+                    },
+                    itemBuilder: (context) => [
+                      PopupMenuItem(
+                        value: 'delete',
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.delete_outline_rounded,
+                              color: Theme.of(context).colorScheme.error,
+                              size: 20,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Delete Post',
+                              style: TextStyle(
+                                color: Theme.of(context).colorScheme.error,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
               ],
             ),
             const SizedBox(height: 12),
-            if (post.postText != null)
+            if (isCompletion)
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Theme.of(context).colorScheme.primaryContainer,
+                      ),
+                      child: Icon(
+                        Icons.task_alt_rounded,
+                        size: 18,
+                        color: Theme.of(context).colorScheme.onPrimaryContainer,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        '${post.posterName} completed "${post.todoTitle ?? post.postText ?? 'a task'}" ✅',
+                        style: Theme.of(context).textTheme.bodyLarge,
+                      ),
+                    ),
+                  ],
+                ),
+              )
+            else if (post.postText != null)
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(vertical: 8),

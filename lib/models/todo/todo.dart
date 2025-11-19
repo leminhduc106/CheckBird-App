@@ -1,5 +1,6 @@
 import 'package:check_bird/models/todo/todo_type.dart';
 import 'package:check_bird/services/notification.dart';
+import 'package:check_bird/screens/group_detail/models/posts_controller.dart';
 import 'package:hive/hive.dart';
 import 'package:intl/intl.dart';
 
@@ -13,7 +14,6 @@ extension DateOnlyCompare on DateTime {
 
 @HiveType(typeId: 0)
 class Todo extends HiveObject {
-  // you can use this if you want
   Todo({
     required this.todoName,
     required this.todoDescription,
@@ -27,7 +27,6 @@ class Todo extends HiveObject {
     required this.textColor,
   });
 
-  // or use this to avoid confusion
   Todo.task({
     required this.todoName,
     required this.todoDescription,
@@ -105,13 +104,21 @@ class Todo extends HiveObject {
 
   void toggleCompleted() {
     DateTime now = DateTime.now();
-    if (lastCompleted == null) {
-      lastCompleted = now;
-    } else {
+    final wasCompleted = isCompleted;
+    if (wasCompleted) {
       lastCompleted = null;
+    } else {
+      lastCompleted = now;
     }
     lastModified = now;
     save();
+
+    if (!wasCompleted && groupId != null) {
+      PostsController().createCompletionPost(
+        groupId: groupId!,
+        todoName: todoName,
+      );
+    }
   }
 
   Future<void> toggleCancelNotification() async {

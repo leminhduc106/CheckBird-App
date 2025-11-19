@@ -1,7 +1,7 @@
 import 'package:check_bird/screens/group_detail/models/post.dart';
 import 'package:check_bird/screens/group_detail/models/posts_controller.dart';
-import 'package:check_bird/screens/group_detail/widgets/posts_log/post_item.dart';
-import 'package:check_bird/services/authentication.dart';
+import 'package:check_bird/screens/group_detail/widgets/posts_log/post_card.dart';
+import 'package:check_bird/screens/group_detail/widgets/posts_log/post_detail_screen.dart';
 import 'package:flutter/material.dart';
 
 class PostsLog extends StatefulWidget {
@@ -13,66 +13,126 @@ class PostsLog extends StatefulWidget {
 }
 
 class _PostsLogState extends State<PostsLog> {
-  late dynamic newPostStream;
-  String? lastPostId;
+  final ScrollController _scrollController = ScrollController();
 
-  Future<void> refresh() async {
-    if (mounted) {
-      setState(() {});
-    }
+  Future<void> _refreshPosts() async {
+    // The StreamBuilder will automatically refresh when the stream updates
+    // No need to force a rebuild with setState
+    return;
   }
 
   @override
-  void initState() {
-    super.initState();
-    newPostStream =
-        PostsController().postsStream(widget.groupId).listen((event) {
-      if (event.isNotEmpty &&
-          event.first.posterId == Authentication.user!.uid &&
-          event.first.id != lastPostId &&
-          mounted) {
-        setState(() {
-          lastPostId = event.first.id;
-        });
-      }
-    });
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return RefreshIndicator(
-      onRefresh: () async {
-        await refresh();
-      },
-      child: FutureBuilder(
-        // stream: PostsController().postsStream(widget.groupId),
-        future: PostsController().postsFuture(widget.groupId),
+      onRefresh: _refreshPosts,
+      child: StreamBuilder<List<Post>>(
+        stream: PostsController().postsStream(widget.groupId),
         builder: (BuildContext context, AsyncSnapshot<List<Post>> snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(
               child: CircularProgressIndicator(),
             );
           }
-          // TODO: this is just temporary solution, in the future, please lookup `ListView.builder JUMPING WHEN SCROLL`
-          final posts = snapshot.data;
-          if (posts == null || posts.isEmpty) {
-            return const Center(
-              child: Text("There are no post yet"),
+
+          if (snapshot.hasError) {
+            return ListView(
+              controller: _scrollController,
+              physics: const AlwaysScrollableScrollPhysics(),
+              children: const [
+                Center(
+                  child: Padding(
+                    padding: EdgeInsets.all(32.0),
+                    child: Text("Error loading posts"),
+                  ),
+                ),
+              ],
             );
           }
-          lastPostId = posts.first.id;
+
+          final posts = snapshot.data;
+          if (posts == null || posts.isEmpty) {
+            return ListView(
+              controller: _scrollController,
+              physics: const AlwaysScrollableScrollPhysics(),
+              children: const [
+                Center(
+                  child: Padding(
+                    padding: EdgeInsets.all(32.0),
+                    child: Text("There are no posts yet"),
+                  ),
+                ),
+              ],
+            );
+          }
+
           return ListView.builder(
-            addAutomaticKeepAlives: true,
+            controller: _scrollController,
+            physics: const AlwaysScrollableScrollPhysics(),
+            addAutomaticKeepAlives: false,
+            addRepaintBoundaries: true,
+            cacheExtent: 1000.0,
             itemCount: posts.length,
             itemBuilder: (BuildContext context, int index) {
-              return PostItem(
-                postId: posts[index].id!,
+              return OptimizedPostItem(
+                post: posts[index],
                 groupId: widget.groupId,
                 key: ValueKey(posts[index].id!),
               );
             },
           );
         },
+      ),
+    );
+  }
+}
+
+// Optimized post item that doesn't create individual streams
+class OptimizedPostItem extends StatelessWidget {
+  const OptimizedPostItem({
+    super.key,
+    required this.post,
+    required this.groupId,
+  });
+
+  final Post post;
+  final String groupId;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 6, 16, 10),
+      child: GestureDetector(
+        onTap: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => PostDetailScreen(
+                groupId: groupId,
+                postId: post.id!,
+              ),
+            ),
+          );
+        },
+        child: PostCard(
+          post: post,
+          groupId: groupId,
+          postId: post.id!,
+          onCommentPressed: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => PostDetailScreen(
+                  groupId: groupId,
+                  postId: post.id!,
+                ),
+              ),
+            );
+          },
+        ),
       ),
     );
   }
