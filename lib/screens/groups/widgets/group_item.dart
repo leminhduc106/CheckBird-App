@@ -11,7 +11,12 @@ class GroupItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
+    AppLocalizations? l10n;
+    try {
+      l10n = AppLocalizations.of(context);
+    } catch (e) {
+      l10n = null;
+    }
     return StreamBuilder(
       stream: GroupsController().groupStream(groupId: groupId),
       builder: (BuildContext context,
@@ -158,7 +163,7 @@ class GroupItem extends StatelessWidget {
                               _StatChip(
                                 icon: Icons.group,
                                 label: l10n?.membersCount(group.numOfMember) ??
-                                    '${group.numOfMember}',
+                                    '${group.numOfMember} members',
                               ),
                               const SizedBox(width: 8),
                               _StatChip(

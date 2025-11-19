@@ -1,4 +1,5 @@
 import 'package:check_bird/screens/about/about_screen.dart';
+import 'package:check_bird/screens/profile/profile_screen.dart';
 import 'package:check_bird/screens/setting/setting_screen.dart';
 import 'package:check_bird/services/authentication.dart';
 import 'package:flutter/material.dart';
@@ -9,7 +10,12 @@ class AppDrawer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
+    AppLocalizations? l10n;
+    try {
+      l10n = AppLocalizations.of(context);
+    } catch (e) {
+      l10n = null;
+    }
     return Drawer(
       child: Column(
         children: [
@@ -28,66 +34,74 @@ class AppDrawer extends StatelessWidget {
               child: Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(20.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const SizedBox(height: 20),
-                    Container(
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        border: Border.all(
+                child: InkWell(
+                  onTap: () {
+                    Navigator.of(context).pop();
+                    Navigator.of(context).pushNamed(ProfileScreen.routeName);
+                  },
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const SizedBox(height: 20),
+                      Container(
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onPrimary
+                                .withOpacity(0.3),
+                            width: 3,
+                          ),
+                        ),
+                        child: CircleAvatar(
+                          radius: 40,
+                          backgroundColor:
+                              Theme.of(context).colorScheme.surface,
+                          backgroundImage: Authentication.user?.photoURL != null
+                              ? NetworkImage(Authentication.user!.photoURL!)
+                              : null,
+                          child: Authentication.user?.photoURL == null
+                              ? Icon(
+                                  Icons.person_rounded,
+                                  size: 40,
+                                  color:
+                                      Theme.of(context).colorScheme.onSurface,
+                                )
+                              : null,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      // User name
+                      Text(
+                        Authentication.user?.displayName ??
+                            (l10n?.profile ?? 'Profile'),
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w600,
+                          color: Theme.of(context).colorScheme.onPrimary,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 4),
+                      // User email
+                      Text(
+                        Authentication.user?.email ??
+                            (l10n?.notSignedIn ?? 'Not signed in'),
+                        style: TextStyle(
+                          fontSize: 14,
                           color: Theme.of(context)
                               .colorScheme
                               .onPrimary
-                              .withOpacity(0.3),
-                          width: 3,
+                              .withOpacity(0.8),
                         ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      child: CircleAvatar(
-                        radius: 40,
-                        backgroundColor: Theme.of(context).colorScheme.surface,
-                        backgroundImage: Authentication.user?.photoURL != null
-                            ? NetworkImage(Authentication.user!.photoURL!)
-                            : null,
-                        child: Authentication.user?.photoURL == null
-                            ? Icon(
-                                Icons.person_rounded,
-                                size: 40,
-                                color: Theme.of(context).colorScheme.onSurface,
-                              )
-                            : null,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    // User name
-                    Text(
-                      Authentication.user?.displayName ??
-                          (l10n?.guestUser ?? 'Guest User'),
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w600,
-                        color: Theme.of(context).colorScheme.onPrimary,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 4),
-                    // User email
-                    Text(
-                      Authentication.user?.email ??
-                          (l10n?.notSignedIn ?? 'Not signed in'),
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Theme.of(context)
-                            .colorScheme
-                            .onPrimary
-                            .withOpacity(0.8),
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 20),
-                  ],
+                      const SizedBox(height: 20),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -97,6 +111,15 @@ class AppDrawer extends StatelessWidget {
             child: ListView(
               padding: const EdgeInsets.symmetric(vertical: 8),
               children: [
+                _buildDrawerItem(
+                  context: context,
+                  icon: Icons.person_rounded,
+                  title: l10n?.profile ?? 'Profile',
+                  onTap: () {
+                    Navigator.of(context).pop();
+                    Navigator.of(context).pushNamed(ProfileScreen.routeName);
+                  },
+                ),
                 _buildDrawerItem(
                   context: context,
                   icon: Icons.settings_rounded,

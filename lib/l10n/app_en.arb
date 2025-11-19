@@ -28,6 +28,6 @@
   "tasksCount": "{count} task(s)",
   "aboutUs": "About Us",
   "logout": "Logout",
-  "guestUser": "Guest User",
+  "profile": "Profile",
   "notSignedIn": "Not signed in"
 }

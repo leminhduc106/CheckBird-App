@@ -28,6 +28,6 @@
   "tasksCount": "{count} công việc",
   "aboutUs": "Về chúng tôi",
   "logout": "Đăng xuất",
-  "guestUser": "Khách",
+  "profile": "Hồ sơ",
   "notSignedIn": "Chưa đăng nhập"
 }

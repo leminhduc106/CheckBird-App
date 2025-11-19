@@ -3,6 +3,7 @@ import 'package:check_bird/models/todo/todo.dart';
 import 'package:check_bird/models/todo/todo_list_controller.dart';
 import 'package:check_bird/screens/about/about_screen.dart';
 import 'package:check_bird/screens/authentication/authenticate_screen.dart';
+import 'package:check_bird/screens/profile/profile_screen.dart';
 import 'package:check_bird/screens/create_task/create_todo_screen.dart';
 import 'package:check_bird/screens/flappy_bird/flappy_bird_screen.dart';
 import 'package:check_bird/screens/groups/groups_screen.dart';
@@ -106,7 +107,7 @@ class MyApp extends StatelessWidget {
     final localeController =
         Provider.of<LocaleController>(context, listen: true);
     return MaterialApp(
-      title: AppLocalizations.of(context)?.appTitle ?? 'CheckBird',
+      title: 'CheckBird',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.of(context, listen: true).getCurrentTheme(),
       locale: localeController.locale,
@@ -130,6 +131,7 @@ class MyApp extends StatelessWidget {
         AuthenticateScreen.routeName: (context) => const AuthenticateScreen(),
         WelcomeScreen.routeName: (context) => const WelcomeScreen(),
         AboutScreen.routeName: (context) => const AboutScreen(),
+        ProfileScreen.routeName: (context) => const ProfileScreen(),
       },
       onUnknownRoute: (settings) {
         return MaterialPageRoute(
