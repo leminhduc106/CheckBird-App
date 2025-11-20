@@ -169,11 +169,6 @@ class ProfileController {
         colorValue: 0xFF2196F3, // Colors.blue
       ),
       ProfileTitle(
-        id: 'nigga',
-        name: 'Nigga',
-        colorValue: 0xFF000000, // Colors.black
-      ),
-      ProfileTitle(
         id: 'newbie',
         name: 'Newbie',
         colorValue: 0xFF9E9E9E, // Colors.grey

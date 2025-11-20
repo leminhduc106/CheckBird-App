@@ -24,6 +24,7 @@ class _ProfileInfoTabState extends State<ProfileInfoTab> {
   final _phoneController = TextEditingController();
   String? _selectedGender;
   DateTime? _selectedDate;
+  OverlayEntry? _toastEntry; // Active toast overlay entry
 
   @override
   void initState() {
@@ -40,7 +41,6 @@ class _ProfileInfoTabState extends State<ProfileInfoTab> {
 
   Future<void> _saveProfile() async {
     if (Authentication.user == null) return;
-
     try {
       final updated = widget.userProfile!.copyWith(
         username: _usernameController.text,
@@ -48,15 +48,13 @@ class _ProfileInfoTabState extends State<ProfileInfoTab> {
         gender: _selectedGender,
         dateOfBirth: _selectedDate,
       );
-
       await _profileController.updateUserProfile(updated);
       widget.onRefresh();
-
       if (!mounted) return;
-      _showTopMessage('Profile updated successfully');
+      _showToast('Profile updated successfully');
     } catch (e) {
       if (!mounted) return;
-      _showTopMessage('Error updating profile: $e', success: false);
+      _showToast('Error updating profile: $e', success: false);
     }
   }
 
@@ -67,7 +65,6 @@ class _ProfileInfoTabState extends State<ProfileInfoTab> {
       firstDate: DateTime(1900),
       lastDate: DateTime.now(),
     );
-
     if (picked != null) {
       setState(() => _selectedDate = picked);
     }
@@ -84,7 +81,6 @@ class _ProfileInfoTabState extends State<ProfileInfoTab> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Section title
           Text(
             'Personal Information',
             style: textTheme.titleLarge?.copyWith(
@@ -100,7 +96,6 @@ class _ProfileInfoTabState extends State<ProfileInfoTab> {
             ),
           ),
           const SizedBox(height: 24),
-
           Card(
             elevation: 0,
             shape: RoundedRectangleBorder(
@@ -147,9 +142,7 @@ class _ProfileInfoTabState extends State<ProfileInfoTab> {
               ),
             ),
           ),
-
           const SizedBox(height: 32),
-
           SizedBox(
             width: double.infinity,
             height: 54,
@@ -172,10 +165,7 @@ class _ProfileInfoTabState extends State<ProfileInfoTab> {
               ),
             ),
           ),
-
           const SizedBox(height: 16),
-
-          // Account info card
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
@@ -431,41 +421,124 @@ class _ProfileInfoTabState extends State<ProfileInfoTab> {
     super.dispose();
   }
 
-  void _showTopMessage(String message, {bool success = true}) {
-    final messenger = ScaffoldMessenger.of(context);
+  // Overlay toast that floats at top without shifting layout
+  void _showToast(String message, {bool success = true}) {
+    final overlay = Overlay.of(context);
+
+    _toastEntry?.remove();
+    _toastEntry = null;
+
     final cs = Theme.of(context).colorScheme;
-
-    messenger.hideCurrentSnackBar();
-    messenger.hideCurrentMaterialBanner();
-
     final bg = success ? cs.primaryContainer : cs.errorContainer;
     final fg = success ? cs.onPrimaryContainer : cs.onErrorContainer;
     final icon = success ? Icons.check_circle_rounded : Icons.error_rounded;
 
-    final banner = MaterialBanner(
-      backgroundColor: bg,
-      surfaceTintColor: bg,
-      elevation: 0,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      leading: Icon(icon, color: fg),
-      content: Text(
-        message,
-        style: TextStyle(color: fg, fontWeight: FontWeight.w600),
-      ),
-      dividerColor: Colors.transparent,
-      actions: [
-        TextButton(
-          onPressed: messenger.hideCurrentMaterialBanner,
-          child: Text('Dismiss', style: TextStyle(color: fg)),
+    _toastEntry = OverlayEntry(
+      builder: (context) => Positioned(
+        top: MediaQuery.of(context).padding.top + 12,
+        left: 16,
+        right: 16,
+        child: _ToastBubble(
+          background: bg,
+          foreground: fg,
+          icon: icon,
+          message: message,
         ),
-      ],
+      ),
     );
 
-    messenger.showMaterialBanner(banner);
+    overlay.insert(_toastEntry!);
 
-    Future.delayed(const Duration(seconds: 2), () {
-      if (!mounted) return;
-      messenger.hideCurrentMaterialBanner();
+    Future.delayed(const Duration(milliseconds: 2200), () {
+      _toastEntry?.remove();
+      _toastEntry = null;
     });
   }
+}
+
+// Toast bubble widget
+class _ToastBubble extends StatefulWidget {
+  final Color background;
+  final Color foreground;
+  final IconData icon;
+  final String message;
+  const _ToastBubble({
+    required this.background,
+    required this.foreground,
+    required this.icon,
+    required this.message,
+  });
+
+  @override
+  State<_ToastBubble> createState() => _ToastBubbleState();
+}
+
+class _ToastBubbleState extends State<_ToastBubble>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _opacity;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 220),
+    );
+    _opacity = CurvedAnimation(parent: _controller, curve: Curves.easeOut);
+    _controller.forward();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FadeTransition(
+      opacity: _opacity,
+      child: Material(
+        color: Colors.transparent,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: BoxDecoration(
+            color: backgroundColor(context),
+            borderRadius: BorderRadius.circular(14),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.15),
+                blurRadius: 18,
+                offset: const Offset(0, 6),
+              ),
+            ],
+            border: Border.all(
+              color: widget.foreground.withOpacity(0.2),
+              width: 1,
+            ),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(widget.icon, color: widget.foreground, size: 22),
+              const SizedBox(width: 10),
+              Flexible(
+                child: Text(
+                  widget.message,
+                  style: TextStyle(
+                    color: widget.foreground,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Color backgroundColor(BuildContext context) =>
+      widget.background.withOpacity(0.95);
 }

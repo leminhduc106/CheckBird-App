@@ -101,6 +101,7 @@ class _ProfileScreenState extends State<ProfileScreen>
             isScrollable: true,
             indicatorSize: TabBarIndicatorSize.label,
             labelPadding: const EdgeInsets.symmetric(horizontal: 16),
+            tabAlignment: TabAlignment.center,
             tabs: const [
               Tab(text: 'Profile'),
               Tab(text: 'Inventory'),
