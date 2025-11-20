@@ -11,10 +11,12 @@ class MessageInput extends StatefulWidget {
   const MessageInput(
       {Key? key,
       required this.chatScreenArguments,
-      required this.messagesLogController})
+      required this.messagesLogController,
+      required this.replyTargetNotifier})
       : super(key: key);
   final ChatScreenArguments chatScreenArguments;
   final ScrollController messagesLogController;
+  final ValueNotifier<Message?> replyTargetNotifier;
 
   @override
   State<MessageInput> createState() => _MessageInputState();
@@ -25,6 +27,7 @@ class _MessageInputState extends State<MessageInput> {
   final _focusNode = FocusNode();
   var _enteredMessages = "";
   var focused = false;
+  Message? get _replyTarget => widget.replyTargetNotifier.value;
 
   Future<File?> _cropImage(File image) async {
     CroppedFile? croppedFile = await ImageCropper().cropImage(
@@ -72,12 +75,14 @@ class _MessageInputState extends State<MessageInput> {
       topicId: widget.chatScreenArguments.topicId,
       groupId: widget.chatScreenArguments.groupId,
       chatType: widget.chatScreenArguments.chatType,
+      replyTo: _replyTarget,
     );
     await widget.messagesLogController.animateTo(
       widget.messagesLogController.position.minScrollExtent,
       duration: const Duration(milliseconds: 500),
       curve: Curves.fastOutSlowIn,
     );
+    widget.replyTargetNotifier.value = null;
   }
 
   @override
@@ -92,6 +97,12 @@ class _MessageInputState extends State<MessageInput> {
         }
       });
     });
+    // Listen for reply target changes to show/hide quote immediately.
+    widget.replyTargetNotifier.addListener(_onReplyTargetChanged);
+  }
+
+  void _onReplyTargetChanged() {
+    if (mounted) setState(() {});
   }
 
   @override
@@ -99,6 +110,7 @@ class _MessageInputState extends State<MessageInput> {
     super.dispose();
     _controller.dispose();
     _focusNode.dispose();
+    widget.replyTargetNotifier.removeListener(_onReplyTargetChanged);
   }
 
   @override
@@ -119,120 +131,212 @@ class _MessageInputState extends State<MessageInput> {
           ),
         ),
       ),
-      child: Row(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Expanded(
-            child: Container(
-              decoration: BoxDecoration(
-                color: Theme.of(context)
-                    .colorScheme
-                    .surfaceVariant
-                    .withOpacity(0.5),
-                borderRadius: BorderRadius.circular(24),
-                border: Border.all(
-                  color: Theme.of(context).colorScheme.outline.withOpacity(0.3),
-                ),
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      focusNode: _focusNode,
-                      controller: _controller,
-                      keyboardType: TextInputType.multiline,
-                      maxLines: 4,
-                      minLines: 1,
-                      onChanged: (text) {
-                        setState(() {
-                          _enteredMessages = text;
-                        });
-                      },
-                      decoration: InputDecoration(
-                        hintText: "Type a message...",
-                        hintStyle: TextStyle(
-                          color: Theme.of(context)
-                              .colorScheme
-                              .onSurface
-                              .withOpacity(0.6),
-                        ),
-                        border: InputBorder.none,
-                        contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 12),
-                      ),
-                      style: Theme.of(context).textTheme.bodyLarge,
+          if (_replyTarget != null)
+            _ChatReplyQuote(
+              author: _replyTarget!.userName,
+              mediaType: _replyTarget!.mediaType,
+              snippet: _replyTarget!.mediaType == MediaType.text
+                  ? _replyTarget!.data
+                  : '[image]',
+              onClose: () => widget.replyTargetNotifier.value = null,
+            ),
+          Row(
+            children: [
+              Expanded(
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Theme.of(context)
+                        .colorScheme
+                        .surfaceVariant
+                        .withOpacity(0.5),
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(
+                      color: Theme.of(context)
+                          .colorScheme
+                          .outline
+                          .withOpacity(0.3),
                     ),
                   ),
-                  if (!focused) ...[
-                    IconButton(
-                      onPressed: () {
-                        _pickImages(ImageSource.camera);
-                      },
-                      icon: Icon(
-                        Icons.camera_alt_rounded,
-                        color: Theme.of(context).colorScheme.primary,
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          focusNode: _focusNode,
+                          controller: _controller,
+                          keyboardType: TextInputType.multiline,
+                          maxLines: 4,
+                          minLines: 1,
+                          onChanged: (text) {
+                            setState(() {
+                              _enteredMessages = text;
+                            });
+                          },
+                          decoration: InputDecoration(
+                            hintText: "Type a message...",
+                            hintStyle: TextStyle(
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurface
+                                  .withOpacity(0.6),
+                            ),
+                            border: InputBorder.none,
+                            contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 12),
+                          ),
+                          style: Theme.of(context).textTheme.bodyLarge,
+                        ),
                       ),
-                      style: IconButton.styleFrom(
-                        padding: const EdgeInsets.all(8),
-                      ),
-                    ),
-                    IconButton(
-                      onPressed: () {
-                        _pickImages(ImageSource.gallery);
-                      },
-                      icon: Icon(
-                        Icons.image_rounded,
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
-                      style: IconButton.styleFrom(
-                        padding: const EdgeInsets.all(8),
-                      ),
-                    ),
-                  ],
-                ],
+                      if (!focused) ...[
+                        IconButton(
+                          onPressed: () {
+                            _pickImages(ImageSource.camera);
+                          },
+                          icon: Icon(
+                            Icons.camera_alt_rounded,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                          style: IconButton.styleFrom(
+                            padding: const EdgeInsets.all(8),
+                          ),
+                        ),
+                        IconButton(
+                          onPressed: () {
+                            _pickImages(ImageSource.gallery);
+                          },
+                          icon: Icon(
+                            Icons.image_rounded,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                          style: IconButton.styleFrom(
+                            padding: const EdgeInsets.all(8),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
               ),
-            ),
-          ),
-          const SizedBox(width: 8),
-          Container(
-            decoration: BoxDecoration(
-              color: (_enteredMessages.trim().isNotEmpty && focused)
-                  ? Theme.of(context).colorScheme.primary
-                  : Theme.of(context).colorScheme.primaryContainer,
-              shape: BoxShape.circle,
-            ),
-            child: IconButton(
-              onPressed: focused
-                  ? _enteredMessages.trim().isEmpty
-                      ? null
+              const SizedBox(width: 8),
+              Container(
+                decoration: BoxDecoration(
+                  color: (_enteredMessages.trim().isNotEmpty && focused)
+                      ? Theme.of(context).colorScheme.primary
+                      : Theme.of(context).colorScheme.primaryContainer,
+                  shape: BoxShape.circle,
+                ),
+                child: IconButton(
+                  onPressed: focused
+                      ? _enteredMessages.trim().isEmpty
+                          ? null
+                          : () {
+                              _sendChat(_enteredMessages.trim());
+                              _focusNode.unfocus();
+                              _controller.clear();
+                              setState(() {
+                                _enteredMessages = "";
+                              });
+                            }
                       : () {
-                          _sendChat(_enteredMessages.trim());
+                          _sendChat('👍');
                           _focusNode.unfocus();
                           _controller.clear();
                           setState(() {
                             _enteredMessages = "";
                           });
-                        }
-                  : () {
-                      _sendChat(
-                          '👍'); // Changed from green checkbox emoji to thumbs up
-                      _focusNode.unfocus();
-                      _controller.clear();
-                      setState(() {
-                        _enteredMessages = "";
-                      });
-                    },
-              icon: Icon(
-                focused
-                    ? Icons.send_rounded
-                    : Icons
-                        .thumb_up_rounded, // Changed from check_box to thumb_up
-                color: (_enteredMessages.trim().isNotEmpty && focused)
-                    ? Theme.of(context).colorScheme.onPrimary
-                    : Theme.of(context).colorScheme.onPrimaryContainer,
+                        },
+                  icon: Icon(
+                    focused ? Icons.send_rounded : Icons.thumb_up_rounded,
+                    color: (_enteredMessages.trim().isNotEmpty && focused)
+                        ? Theme.of(context).colorScheme.onPrimary
+                        : Theme.of(context).colorScheme.onPrimaryContainer,
+                  ),
+                  style: IconButton.styleFrom(
+                    padding: const EdgeInsets.all(12),
+                  ),
+                ),
               ),
-              style: IconButton.styleFrom(
-                padding: const EdgeInsets.all(12),
-              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ChatReplyQuote extends StatelessWidget {
+  const _ChatReplyQuote({
+    Key? key,
+    required this.author,
+    required this.snippet,
+    required this.mediaType,
+    required this.onClose,
+  }) : super(key: key);
+
+  final String author;
+  final String snippet;
+  final MediaType mediaType;
+  final VoidCallback onClose;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final truncated =
+        snippet.length > 90 ? '${snippet.substring(0, 90)}…' : snippet;
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface.withOpacity(0.6),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: theme.colorScheme.outline.withOpacity(0.15),
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 3,
+            height: 40,
+            margin: const EdgeInsets.only(right: 10, top: 2),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.primary,
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Replying to $author',
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: theme.colorScheme.primary,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  truncated,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurface.withOpacity(0.75),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          GestureDetector(
+            onTap: onClose,
+            child: Icon(
+              Icons.close,
+              size: 18,
+              color: theme.colorScheme.onSurface.withOpacity(0.6),
             ),
           ),
         ],

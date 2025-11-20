@@ -30,6 +30,9 @@ class CommentsController {
     required String postId,
     required String text,
     File? imageFile,
+    String? parentCommentId,
+    String? replyToUserName,
+    String? replyToText,
   }) async {
     final commentsRef = _commentsRef(groupId, postId);
     final postRef = FirebaseFirestore.instance
@@ -73,6 +76,12 @@ class CommentsController {
         'createdAt': now,
         'likeCount': 0,
       };
+      if (parentCommentId != null && parentCommentId.isNotEmpty) {
+        commentData['parentId'] = parentCommentId;
+        if (replyToUserName != null)
+          commentData['replyToUserName'] = replyToUserName;
+        if (replyToText != null) commentData['replyToText'] = replyToText;
+      }
       if (uploadedImageUrl != null) {
         commentData['imageUrl'] = uploadedImageUrl;
       }
@@ -162,6 +171,15 @@ class CommentsController {
           imageUrl: (data['imageUrl'] ?? '').toString().isEmpty
               ? null
               : (data['imageUrl'] as String),
+          parentId: (data['parentId'] ?? '').toString().isEmpty
+              ? null
+              : (data['parentId'] as String),
+          replyToUserName: (data['replyToUserName'] ?? '').toString().isEmpty
+              ? null
+              : (data['replyToUserName'] as String),
+          replyToText: (data['replyToText'] ?? '').toString().isEmpty
+              ? null
+              : (data['replyToText'] as String),
         );
       }).toList();
       emit();

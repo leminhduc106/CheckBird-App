@@ -1,4 +1,5 @@
 import 'package:check_bird/screens/group_detail/models/post.dart';
+import 'package:check_bird/screens/group_detail/models/comment.dart';
 import 'package:check_bird/screens/group_detail/models/posts_controller.dart';
 import 'package:check_bird/screens/group_detail/widgets/posts_log/post_card.dart';
 import 'package:check_bird/screens/group_detail/widgets/posts_log/widgets/comment_input.dart';
@@ -20,6 +21,7 @@ class PostDetailScreen extends StatefulWidget {
 class _PostDetailScreenState extends State<PostDetailScreen> {
   final FocusNode _commentFocusNode = FocusNode();
   final ScrollController _scrollController = ScrollController();
+  final ValueNotifier<Comment?> _replyTarget = ValueNotifier<Comment?>(null);
 
   void _focusComposer() {
     if (_scrollController.hasClients) {
@@ -33,9 +35,20 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
   }
 
   @override
+  void initState() {
+    super.initState();
+    _replyTarget.addListener(() {
+      if (_replyTarget.value != null) {
+        _focusComposer();
+      }
+    });
+  }
+
+  @override
   void dispose() {
     _commentFocusNode.dispose();
     _scrollController.dispose();
+    _replyTarget.dispose();
     super.dispose();
   }
 
@@ -91,6 +104,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                         groupId: widget.groupId,
                         postId: widget.postId,
                         shrinkWrap: true,
+                        replyTargetNotifier: _replyTarget,
                       ),
                       const SizedBox(height: 80),
                     ],
@@ -102,6 +116,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
               groupId: widget.groupId,
               postId: widget.postId,
               focusNode: _commentFocusNode,
+              replyTargetNotifier: _replyTarget,
             ),
           ],
         ),

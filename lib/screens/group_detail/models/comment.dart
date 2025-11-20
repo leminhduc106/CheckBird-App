@@ -11,6 +11,9 @@ class Comment {
     required this.likeCount,
     this.isLegacy = false,
     this.imageUrl,
+    this.parentId,
+    this.replyToUserName,
+    this.replyToText,
   });
 
   final String id;
@@ -22,4 +25,8 @@ class Comment {
   final int likeCount;
   final bool isLegacy;
   final String? imageUrl;
+  final String?
+      parentId; // when set, this comment is a reply to another comment
+  final String? replyToUserName; // cached for fast UI display
+  final String? replyToText; // small snippet of the original comment
 }

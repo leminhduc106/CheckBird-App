@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:check_bird/screens/group_detail/models/comments_controller.dart';
+import 'package:check_bird/screens/group_detail/models/comment.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
@@ -10,12 +11,14 @@ class CommentInput extends StatefulWidget {
     required this.postId,
     this.controller,
     this.focusNode,
+    this.replyTargetNotifier,
   }) : super(key: key);
 
   final String groupId;
   final String postId;
   final TextEditingController? controller;
   final FocusNode? focusNode;
+  final ValueNotifier<Comment?>? replyTargetNotifier;
 
   @override
   State<CommentInput> createState() => _CommentInputState();
@@ -29,6 +32,7 @@ class _CommentInputState extends State<CommentInput> {
   bool _isSubmitting = false;
   File? _attachedImage;
   final ImagePicker _picker = ImagePicker();
+  Comment? get _replyTarget => widget.replyTargetNotifier?.value;
 
   @override
   void initState() {
@@ -37,6 +41,14 @@ class _CommentInputState extends State<CommentInput> {
     _controller = widget.controller ?? TextEditingController();
     _ownsFocusNode = widget.focusNode == null;
     _focusNode = widget.focusNode ?? FocusNode();
+    // Rebuild when reply target changes so quote block appears/disappears.
+    if (widget.replyTargetNotifier != null) {
+      widget.replyTargetNotifier!.addListener(_onReplyTargetChanged);
+    }
+  }
+
+  void _onReplyTargetChanged() {
+    if (mounted) setState(() {});
   }
 
   @override
@@ -47,6 +59,7 @@ class _CommentInputState extends State<CommentInput> {
     if (_ownsFocusNode) {
       _focusNode.dispose();
     }
+    widget.replyTargetNotifier?.removeListener(_onReplyTargetChanged);
     super.dispose();
   }
 
@@ -86,10 +99,16 @@ class _CommentInputState extends State<CommentInput> {
         postId: widget.postId,
         text: text,
         imageFile: _attachedImage,
+        parentCommentId: _replyTarget?.id,
+        replyToUserName: _replyTarget?.userName,
+        replyToText: _replyTarget?.text.isNotEmpty == true
+            ? _replyTarget!.text
+            : (_replyTarget?.imageUrl != null ? '[image]' : ''),
       );
       _controller.clear();
       _attachedImage = null;
       _focusNode.unfocus();
+      widget.replyTargetNotifier?.value = null;
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -123,6 +142,14 @@ class _CommentInputState extends State<CommentInput> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
+          if (widget.replyTargetNotifier != null && _replyTarget != null)
+            _ReplyQuote(
+              author: _replyTarget!.userName,
+              snippet: _replyTarget!.text.isNotEmpty
+                  ? _replyTarget!.text
+                  : (_replyTarget!.imageUrl != null ? '[image]' : ''),
+              onClose: () => widget.replyTargetNotifier!.value = null,
+            ),
           if (_attachedImage != null)
             Align(
               alignment: Alignment.centerLeft,
@@ -236,6 +263,83 @@ class _CommentInputState extends State<CommentInput> {
                 ),
               ),
             ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ReplyQuote extends StatelessWidget {
+  const _ReplyQuote({
+    Key? key,
+    required this.author,
+    required this.snippet,
+    required this.onClose,
+  }) : super(key: key);
+
+  final String author;
+  final String snippet;
+  final VoidCallback onClose;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final truncated =
+        snippet.length > 90 ? '${snippet.substring(0, 90)}…' : snippet;
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface.withOpacity(0.6),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: theme.colorScheme.outline.withOpacity(0.15),
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 3,
+            height: 40,
+            margin: const EdgeInsets.only(right: 10, top: 2),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.primary,
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Replying to $author',
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: theme.colorScheme.primary,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  truncated,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurface.withOpacity(0.75),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          GestureDetector(
+            onTap: onClose,
+            child: Icon(
+              Icons.close,
+              size: 18,
+              color: theme.colorScheme.onSurface.withOpacity(0.6),
+            ),
           ),
         ],
       ),

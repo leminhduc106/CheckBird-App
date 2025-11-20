@@ -10,11 +10,17 @@ class CommentItem extends StatefulWidget {
     required this.comment,
     required this.groupId,
     required this.postId,
+    this.onReply,
+    this.indent = 0,
+    this.isReply = false,
   }) : super(key: key);
 
   final Comment comment;
   final String groupId;
   final String postId;
+  final void Function(Comment comment)? onReply;
+  final double indent; // for replies indentation
+  final bool isReply;
 
   @override
   State<CommentItem> createState() => _CommentItemState();
@@ -82,8 +88,20 @@ class _CommentItemState extends State<CommentItem> {
 
   @override
   Widget build(BuildContext context) {
+    final comment = widget.comment;
+    final bool isReply = widget.isReply;
+    final double indent = widget.indent;
+    final double leftPadding = 16 + indent;
+    final double rightPadding = 16;
+    final double avatarRadius = isReply ? 14 : 16;
+    final Color bubbleColor = isReply
+        ? Theme.of(context).colorScheme.surface.withOpacity(
+            Theme.of(context).brightness == Brightness.dark ? 0.35 : 0.8)
+        : Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.5);
+
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: EdgeInsets.fromLTRB(
+          leftPadding, isReply ? 6 : 8, rightPadding, isReply ? 6 : 8),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -97,14 +115,14 @@ class _CommentItemState extends State<CommentItem> {
               ),
             ),
             child: CircleAvatar(
-              radius: 16,
-              backgroundImage: widget.comment.userAvatarUrl.isNotEmpty
-                  ? NetworkImage(widget.comment.userAvatarUrl)
+              radius: avatarRadius,
+              backgroundImage: comment.userAvatarUrl.isNotEmpty
+                  ? NetworkImage(comment.userAvatarUrl)
                   : null,
-              child: widget.comment.userAvatarUrl.isEmpty
+              child: comment.userAvatarUrl.isEmpty
                   ? Icon(
                       Icons.person,
-                      size: 16,
+                      size: avatarRadius,
                       color: Theme.of(context).colorScheme.onSurface,
                     )
                   : null,
@@ -131,7 +149,7 @@ class _CommentItemState extends State<CommentItem> {
                     children: [
                       // User Name
                       Text(
-                        widget.comment.userName,
+                        comment.userName,
                         style:
                             Theme.of(context).textTheme.labelMedium?.copyWith(
                                   fontWeight: FontWeight.w600,
@@ -140,19 +158,19 @@ class _CommentItemState extends State<CommentItem> {
                       ),
                       const SizedBox(height: 4),
                       // Comment Text
-                      if (widget.comment.text.isNotEmpty)
+                      if (comment.text.isNotEmpty)
                         Text(
-                          widget.comment.text,
+                          comment.text,
                           style: Theme.of(context).textTheme.bodyMedium,
                         ),
-                      if (widget.comment.imageUrl != null) ...[
+                      if (comment.imageUrl != null) ...[
                         const SizedBox(height: 8),
                         GestureDetector(
                           onTap: () {
                             Navigator.of(context).push(
                               MaterialPageRoute(
                                 builder: (context) => ImageViewChatScreen(
-                                  imageUrl: widget.comment.imageUrl!,
+                                  imageUrl: comment.imageUrl!,
                                 ),
                               ),
                             );
@@ -160,7 +178,7 @@ class _CommentItemState extends State<CommentItem> {
                           child: ClipRRect(
                             borderRadius: BorderRadius.circular(12),
                             child: Image.network(
-                              widget.comment.imageUrl!,
+                              comment.imageUrl!,
                               height: 160,
                               width: double.infinity,
                               fit: BoxFit.cover,
@@ -176,7 +194,7 @@ class _CommentItemState extends State<CommentItem> {
                 Row(
                   children: [
                     Text(
-                      _formatTime(widget.comment.createdAt.toDate()),
+                      _formatTime(comment.createdAt.toDate()),
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                             color: Theme.of(context)
                                 .colorScheme
@@ -187,9 +205,9 @@ class _CommentItemState extends State<CommentItem> {
                     const SizedBox(width: 16),
                     // Like Button / Legacy indicator
                     Opacity(
-                      opacity: widget.comment.isLegacy ? 0.4 : 1,
+                      opacity: comment.isLegacy ? 0.4 : 1,
                       child: InkWell(
-                        onTap: widget.comment.isLegacy ? null : _toggleLike,
+                        onTap: comment.isLegacy ? null : _toggleLike,
                         borderRadius: BorderRadius.circular(8),
                         child: Padding(
                           padding: const EdgeInsets.symmetric(
@@ -202,7 +220,7 @@ class _CommentItemState extends State<CommentItem> {
                                     ? Icons.favorite
                                     : Icons.favorite_border,
                                 size: 16,
-                                color: widget.comment.isLegacy
+                                color: comment.isLegacy
                                     ? Theme.of(context)
                                         .colorScheme
                                         .onSurface
@@ -234,6 +252,28 @@ class _CommentItemState extends State<CommentItem> {
                         ),
                       ),
                     ),
+                    const SizedBox(width: 12),
+                    if (!comment.isLegacy && comment.parentId == null)
+                      InkWell(
+                        onTap: widget.onReply == null
+                            ? null
+                            : () => widget.onReply!(widget.comment),
+                        borderRadius: BorderRadius.circular(8),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 4),
+                          child: Text(
+                            'Reply',
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodySmall
+                                ?.copyWith(
+                                  color: Theme.of(context).colorScheme.primary,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                          ),
+                        ),
+                      ),
                   ],
                 ),
               ],

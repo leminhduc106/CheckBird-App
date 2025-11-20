@@ -95,7 +95,6 @@ class _ProfileScreenState extends State<ProfileScreen>
           _buildProfileHeader(),
 
           // Tab Bar
-
           TabBar(
             controller: _tabController,
             isScrollable: true,

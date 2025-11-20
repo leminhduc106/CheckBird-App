@@ -18,6 +18,10 @@ class Message {
     required this.userName,
     required this.id,
     required this.mediaType,
+    this.replyToMessageId,
+    this.replyToUserName,
+    this.replyToText,
+    this.replyToMediaType,
   });
 
   final MediaType mediaType;
@@ -28,6 +32,10 @@ class Message {
   final String data;
   final String userId;
   final String userImageUrl;
+  final String? replyToMessageId;
+  final String? replyToUserName;
+  final String? replyToText;
+  final MediaType? replyToMediaType;
 }
 
 class MessagesController {
@@ -79,7 +87,8 @@ class MessagesController {
       required ChatType chatType,
       required String groupId,
       String? topicId,
-      required MediaType mediaType}) async {
+      required MediaType mediaType,
+      Message? replyTo}) async {
     var ref = _textRef(chatType, groupId, topicId);
 
     late String type;
@@ -104,14 +113,21 @@ class MessagesController {
       });
     }
 
-    await ref.add({
+    final payload = {
       'type': type,
       'data': data,
       'userId': Authentication.user!.uid,
       'userName': Authentication.user!.displayName,
       'created': await NTP.now(),
       'userImageUrl': Authentication.user!.photoURL ?? '',
-    });
+    };
+    if (replyTo != null) {
+      payload['replyToMessageId'] = replyTo.id;
+      payload['replyToUserName'] = replyTo.userName;
+      payload['replyToText'] = replyTo.data;
+      payload['replyToMediaType'] = replyTo.mediaType.name;
+    }
+    await ref.add(payload);
   }
 
   Stream<List<Message>> messagesStream(
@@ -135,6 +151,22 @@ class MessagesController {
           userId: msgData['userId'],
           userImageUrl: (msgData['userImageUrl'] ?? '').toString(),
           userName: msgData['userName'],
+          replyToMessageId:
+              (msgData['replyToMessageId'] ?? '').toString().isEmpty
+                  ? null
+                  : msgData['replyToMessageId'],
+          replyToUserName: (msgData['replyToUserName'] ?? '').toString().isEmpty
+              ? null
+              : msgData['replyToUserName'],
+          replyToText: (msgData['replyToText'] ?? '').toString().isEmpty
+              ? null
+              : msgData['replyToText'],
+          replyToMediaType:
+              (msgData['replyToMediaType'] ?? '').toString().isEmpty
+                  ? null
+                  : (msgData['replyToMediaType'] == 'image'
+                      ? MediaType.image
+                      : MediaType.text),
         );
       }).toList();
     });

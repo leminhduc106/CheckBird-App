@@ -7,9 +7,11 @@ class MessagesLog extends StatefulWidget {
   const MessagesLog(
       {super.key,
       required this.chatScreenArguments,
-      required this.messagesLogController});
+      required this.messagesLogController,
+      required this.replyTargetNotifier});
   final ChatScreenArguments chatScreenArguments;
   final ScrollController messagesLogController;
+  final ValueNotifier<Message?> replyTargetNotifier;
 
   @override
   State<MessagesLog> createState() => _MessagesLogState();
@@ -43,6 +45,11 @@ class _MessagesLogState extends State<MessagesLog> {
                     senderName: messages.data![index].userName,
                     sendAt: messages.data![index].created,
                     mediaType: messages.data![index].mediaType,
+                    replyToUserName: messages.data![index].replyToUserName,
+                    replyToText: messages.data![index].replyToText,
+                    replyToMediaType: messages.data![index].replyToMediaType,
+                    onReply: () => widget.replyTargetNotifier.value =
+                        messages.data![index],
                   );
                 },
                 reverse: true,
