@@ -55,6 +55,119 @@ class Authentication {
     }
   }
 
+  // Email/Password Authentication
+  static Future<UserCredential?> signInWithEmail({
+    required String email,
+    required String password,
+  }) async {
+    try {
+      final UserCredential userCredential =
+          await FirebaseAuth.instance.signInWithEmailAndPassword(
+        email: email.trim(),
+        password: password,
+      );
+      user = userCredential.user;
+
+      // Check if email is verified
+      if (user != null && !user!.emailVerified) {
+        // Sign out immediately if email not verified
+        await FirebaseAuth.instance.signOut();
+        user = null;
+        throw FirebaseAuthException(
+          code: 'email-not-verified',
+          message: 'Please verify your email before signing in.',
+        );
+      }
+
+      // Update user profile in Firestore
+      if (user != null) {
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(user!.uid)
+            .set({'email': user!.email}, SetOptions(merge: true));
+      }
+
+      return userCredential;
+    } on FirebaseAuthException catch (e) {
+      debugPrint('Email sign-in error: ${e.code} -> ${e.message}');
+      rethrow; // Re-throw to handle in UI
+    } catch (e) {
+      debugPrint('Unexpected email sign-in error: $e');
+      rethrow;
+    }
+  }
+
+  static Future<UserCredential?> signUpWithEmail({
+    required String email,
+    required String password,
+    String? displayName,
+  }) async {
+    try {
+      final UserCredential userCredential =
+          await FirebaseAuth.instance.createUserWithEmailAndPassword(
+        email: email.trim(),
+        password: password,
+      );
+      user = userCredential.user;
+
+      // Update display name if provided
+      if (displayName != null && displayName.isNotEmpty) {
+        await user?.updateDisplayName(displayName);
+        await user?.reload();
+        user = FirebaseAuth.instance.currentUser;
+      }
+
+      // Send email verification
+      await user?.sendEmailVerification();
+
+      // Create user profile in Firestore
+      if (user != null) {
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(user!.uid)
+            .set({
+          'email': user!.email,
+          'username': displayName ?? user!.email?.split('@')[0],
+          'createdAt': FieldValue.serverTimestamp(),
+        });
+      }
+
+      // Sign out the user immediately so they can't use the app until verified
+      await FirebaseAuth.instance.signOut();
+      user = null;
+
+      return userCredential;
+    } on FirebaseAuthException catch (e) {
+      debugPrint('Email sign-up error: ${e.code} -> ${e.message}');
+      rethrow;
+    } catch (e) {
+      debugPrint('Unexpected email sign-up error: $e');
+      rethrow;
+    }
+  }
+
+  static Future<void> sendPasswordResetEmail(String email) async {
+    try {
+      await FirebaseAuth.instance.sendPasswordResetEmail(
+        email: email.trim(),
+      );
+    } on FirebaseAuthException catch (e) {
+      debugPrint('Password reset error: ${e.code} -> ${e.message}');
+      rethrow;
+    }
+  }
+
+  static Future<void> sendEmailVerification() async {
+    try {
+      await user?.sendEmailVerification();
+    } on FirebaseAuthException catch (e) {
+      debugPrint('Email verification error: ${e.code} -> ${e.message}');
+      rethrow;
+    }
+  }
+
+  static bool get isEmailVerified => user?.emailVerified ?? false;
+
   static Future<void> signOut() async {
     user = null;
     await FirebaseAuth.instance.signOut();

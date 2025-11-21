@@ -7,13 +7,28 @@ class GoogleLoginButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final width = MediaQuery.sizeOf(context).width;
-    return ElevatedButton(
+
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: ElevatedButton(
         style: ElevatedButton.styleFrom(
-          backgroundColor: Theme.of(context).primaryColor,
-          foregroundColor: Colors.white,
-          padding: const EdgeInsets.all(12),
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          backgroundColor: Colors.white,
+          foregroundColor: Colors.grey[800],
+          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: BorderSide(color: Colors.grey[300]!, width: 1.5),
+          ),
         ),
         onPressed: () {
           Authentication.signInWithGoogle();
@@ -21,18 +36,23 @@ class GoogleLoginButton extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Image.asset('assets/images/google-logo.png'),
-            SizedBox(
-              width: width * 0.08,
+            Image.asset(
+              'assets/images/google-logo.png',
+              height: 24,
+              width: 24,
             ),
+            SizedBox(width: width * 0.04),
             const Text(
               "Continue with Google",
               style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 20,
+                fontWeight: FontWeight.w600,
+                fontSize: 15,
+                letterSpacing: 0.3,
               ),
             ),
           ],
-        ));
+        ),
+      ),
+    );
   }
 }

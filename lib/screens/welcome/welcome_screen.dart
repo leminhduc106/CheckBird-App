@@ -21,11 +21,29 @@ class WelcomeScreen extends StatelessWidget {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
-          if (snapshot.hasData) {
-            Authentication.user = snapshot.data;
+
+          // Check if user exists AND either:
+          // 1. Email is verified, OR
+          // 2. User signed in with Google (Google emails are pre-verified)
+          final user = snapshot.data;
+          bool isAuthenticated = false;
+
+          if (user != null) {
+            // Check if user signed in with Google (no email verification needed)
+            final isGoogleUser = user.providerData
+                .any((provider) => provider.providerId == 'google.com');
+
+            isAuthenticated = user.emailVerified || isGoogleUser;
           }
+
+          if (isAuthenticated) {
+            Authentication.user = user;
+          } else {
+            Authentication.user = null;
+          }
+
           return PageTransitionSwitcher(
-            child: snapshot.hasData
+            child: isAuthenticated
                 ? const MainNavigatorScreen()
                 : const AuthenticateScreen(),
             transitionBuilder: (Widget child,

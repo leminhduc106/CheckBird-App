@@ -27,12 +27,14 @@ class GroupScreen extends StatelessWidget {
         ),
         title: Text(l10n?.groupTitle ?? 'Group'),
         actions: [
-          IconButton(
-              onPressed: () {
-                Navigator.of(context).push(MaterialPageRoute(
-                    builder: (context) => const CreateGroupScreen()));
-              },
-              icon: const Icon(Icons.group_add)),
+          // Only show create group button if user is authenticated
+          if (Authentication.user != null)
+            IconButton(
+                onPressed: () {
+                  Navigator.of(context).push(MaterialPageRoute(
+                      builder: (context) => const CreateGroupScreen()));
+                },
+                icon: const Icon(Icons.group_add)),
           const FocusButton(),
         ],
       ),

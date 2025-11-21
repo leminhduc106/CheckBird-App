@@ -139,16 +139,39 @@ class AppDrawer extends StatelessWidget {
                   },
                 ),
                 const Divider(indent: 16, endIndent: 16),
-                _buildDrawerItem(
-                  context: context,
-                  icon: Icons.logout_rounded,
-                  title: l10n?.logout ?? 'Logout',
-                  textColor: Theme.of(context).colorScheme.error,
-                  onTap: () async {
-                    Navigator.of(context).pop();
-                    await Authentication.signOut();
-                  },
-                ),
+                // Show "Sign In" for guest users or "Logout" for authenticated users
+                Authentication.user == null
+                    ? _buildDrawerItem(
+                        context: context,
+                        icon: Icons.login_rounded,
+                        title: l10n?.signIn ?? 'Sign In',
+                        textColor: Theme.of(context).colorScheme.primary,
+                        onTap: () {
+                          Navigator.of(context).pop();
+                          // Navigate to login screen and clear the stack
+                          Navigator.of(context).pushNamedAndRemoveUntil(
+                            '/welcome-screen',
+                            (route) => false,
+                          );
+                        },
+                      )
+                    : _buildDrawerItem(
+                        context: context,
+                        icon: Icons.logout_rounded,
+                        title: l10n?.logout ?? 'Logout',
+                        textColor: Theme.of(context).colorScheme.error,
+                        onTap: () async {
+                          Navigator.of(context).pop();
+                          await Authentication.signOut();
+                          // Navigate to WelcomeScreen and clear the entire navigation stack
+                          if (context.mounted) {
+                            Navigator.of(context).pushNamedAndRemoveUntil(
+                              '/welcome-screen',
+                              (route) => false,
+                            );
+                          }
+                        },
+                      ),
               ],
             ),
           ),

@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "483781811955",
+    "firebase_url": "https://checkbird-d2804-default-rtdb.asia-southeast1.firebasedatabase.app",
+    "project_id": "checkbird-d2804",
+    "storage_bucket": "checkbird-d2804.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:483781811955:android:6e47664e9580171d84a186",
+        "android_client_info": {
+          "package_name": "com.techlosophy.check_bird"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "483781811955-idqvlc3bkls3tedr7g2lk3c7pgokqeps.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.techlosophy.check_bird",
+            "certificate_hash": "40d6789744715eaedc19c7d583f6e334c0ca2ff1"
+          }
+        },
+        {
+          "client_id": "483781811955-v9bb0qtk566vpflo3lm6s8lbseql83ca.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDE9srFEVCARSKxg-FpztuGkfZKQ-l4eSs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "483781811955-v9bb0qtk566vpflo3lm6s8lbseql83ca.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
