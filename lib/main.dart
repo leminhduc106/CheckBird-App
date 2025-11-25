@@ -11,8 +11,10 @@ import 'package:check_bird/screens/home/home_screen.dart';
 import 'package:check_bird/screens/main_navigator/main_navigator_screen.dart';
 import 'package:check_bird/screens/not_implemented/not_implemented_screen.dart';
 import 'package:check_bird/screens/shop/shop_screen.dart';
+import 'package:check_bird/screens/splash/splash_screen.dart';
 import 'package:check_bird/screens/task/task_screen.dart';
 import 'package:check_bird/screens/welcome/welcome_screen.dart';
+import 'package:check_bird/screens/welcome/beautiful_welcome_screen.dart';
 import 'package:check_bird/screens/setting/setting_screen.dart';
 import 'package:check_bird/services/notification.dart';
 import 'package:flutter/material.dart';
@@ -118,8 +120,11 @@ class MyApp extends StatelessWidget {
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
-      initialRoute: WelcomeScreen.routeName,
+      home: const WelcomeScreen(),
       routes: {
+        SplashScreen.routeName: (context) => const SplashScreen(),
+        BeautifulWelcomeScreen.routeName: (context) =>
+            const BeautifulWelcomeScreen(),
         SettingScreen.routeName: (context) => const SettingScreen(),
         CreateTodoScreen.routeName: (context) => const CreateTodoScreen(),
         FlappyBirdScreen.routeName: (context) => const FlappyBirdScreen(),

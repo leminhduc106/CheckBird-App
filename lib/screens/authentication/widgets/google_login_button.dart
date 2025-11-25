@@ -1,8 +1,45 @@
 import 'package:flutter/material.dart';
 import 'package:check_bird/services/authentication.dart';
 
-class GoogleLoginButton extends StatelessWidget {
+class GoogleLoginButton extends StatefulWidget {
   const GoogleLoginButton({super.key});
+
+  @override
+  State<GoogleLoginButton> createState() => _GoogleLoginButtonState();
+}
+
+class _GoogleLoginButtonState extends State<GoogleLoginButton> {
+  bool _isLoading = false;
+
+  Future<void> _signInWithGoogle() async {
+    setState(() => _isLoading = true);
+
+    try {
+      final result = await Authentication.signInWithGoogle();
+      if (result != null && mounted) {
+        // Navigation will be handled by StreamBuilder in WelcomeScreen
+        setState(() => _isLoading = false);
+      } else if (mounted) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Google Sign-In was cancelled or failed'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Google Sign-In failed: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -30,21 +67,26 @@ class GoogleLoginButton extends StatelessWidget {
             side: BorderSide(color: Colors.grey[300]!, width: 1.5),
           ),
         ),
-        onPressed: () {
-          Authentication.signInWithGoogle();
-        },
+        onPressed: _isLoading ? null : _signInWithGoogle,
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Image.asset(
-              'assets/images/google-logo.png',
-              height: 24,
-              width: 24,
-            ),
+            if (_isLoading)
+              const SizedBox(
+                width: 24,
+                height: 24,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+            else
+              Image.asset(
+                'assets/images/google-logo.png',
+                height: 24,
+                width: 24,
+              ),
             SizedBox(width: width * 0.04),
-            const Text(
-              "Continue with Google",
-              style: TextStyle(
+            Text(
+              _isLoading ? "Signing in..." : "Continue with Google",
+              style: const TextStyle(
                 fontWeight: FontWeight.w600,
                 fontSize: 15,
                 letterSpacing: 0.3,

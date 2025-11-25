@@ -42,7 +42,13 @@ class _EmailLoginFormState extends State<EmailLoginForm> {
         password: _passwordController.text,
       );
       // Navigation will be handled by StreamBuilder in WelcomeScreen
+      // Just reset loading state - the StreamBuilder will detect auth change
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     } on FirebaseAuthException catch (e) {
+      if (!mounted) return;
+
       String message;
       final l10n = AppLocalizations.of(context);
       switch (e.code) {
@@ -68,21 +74,20 @@ class _EmailLoginFormState extends State<EmailLoginForm> {
         default:
           message = 'Sign in failed: ${e.message}';
       }
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(message), backgroundColor: Colors.red),
-        );
-      }
+
+      setState(() => _isLoading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message), backgroundColor: Colors.red),
+      );
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-              content: Text('An error occurred: $e'),
-              backgroundColor: Colors.red),
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
+      if (!mounted) return;
+
+      setState(() => _isLoading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+            content: Text('An error occurred: $e'),
+            backgroundColor: Colors.red),
+      );
     }
   }
 

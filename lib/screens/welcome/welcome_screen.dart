@@ -1,20 +1,65 @@
 import 'package:animations/animations.dart';
-import 'package:check_bird/screens/authentication/authenticate_screen.dart';
 import 'package:check_bird/screens/main_navigator/main_navigator_screen.dart';
+import 'package:check_bird/screens/splash/splash_screen.dart';
+import 'package:check_bird/screens/welcome/beautiful_welcome_screen.dart';
 import 'package:check_bird/services/authentication.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
-class WelcomeScreen extends StatelessWidget {
+class WelcomeScreen extends StatefulWidget {
   static const routeName = '/welcome-screen';
 
   const WelcomeScreen({super.key});
 
-  /// A StreamBuilder shall be used here with FirebaseAuth as its stream, which
-  /// will then determine the login-state of user and show HomePage or
-  /// AuthenticateScreen accordingly.
+  @override
+  State<WelcomeScreen> createState() => _WelcomeScreenState();
+}
+
+class _WelcomeScreenState extends State<WelcomeScreen> {
+  bool _isFirstLaunch = true;
+  bool _isCheckingFirstLaunch = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkFirstLaunch();
+  }
+
+  Future<void> _checkFirstLaunch() async {
+    final prefs = await SharedPreferences.getInstance();
+    final hasSeenSplash = prefs.getBool('has_seen_splash') ?? false;
+
+    setState(() {
+      _isFirstLaunch = !hasSeenSplash;
+      _isCheckingFirstLaunch = false;
+    });
+  }
+
+  Future<void> _markSplashAsSeen() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('has_seen_splash', true);
+    setState(() {
+      _isFirstLaunch = false;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
+    if (_isCheckingFirstLaunch) {
+      return const Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+
+    if (_isFirstLaunch) {
+      return SplashScreen(
+        onAnimationComplete: _markSplashAsSeen,
+      );
+    }
+
     return StreamBuilder<User?>(
         stream: FirebaseAuth.instance.authStateChanges(),
         builder: (context, snapshot) {
@@ -42,10 +87,14 @@ class WelcomeScreen extends StatelessWidget {
             Authentication.user = null;
           }
 
+          // Show beautiful welcome for unauthenticated users
+          // Show main app for authenticated users
+          Widget currentWidget = isAuthenticated
+              ? const MainNavigatorScreen()
+              : const BeautifulWelcomeScreen();
+
           return PageTransitionSwitcher(
-            child: isAuthenticated
-                ? const MainNavigatorScreen()
-                : const AuthenticateScreen(),
+            child: currentWidget,
             transitionBuilder: (Widget child,
                 Animation<double> primaryAnimation,
                 Animation<double> secondaryAnimation) {

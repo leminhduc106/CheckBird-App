@@ -1,6 +1,10 @@
 import 'package:check_bird/models/user_profile.dart';
+import 'package:check_bird/widgets/image_crop_dialog.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:flutter/material.dart';
+import 'dart:io';
 
 class ProfileController {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -26,6 +30,75 @@ class ProfileController {
           .set(profile.toFirestore(), SetOptions(merge: true));
     } catch (e) {
       debugPrint('Error updating user profile: $e');
+      rethrow;
+    }
+  }
+
+  Future<String?> uploadAvatar(String uid, File imageFile) async {
+    try {
+      final storageRef =
+          FirebaseStorage.instance.ref().child('avatars').child('$uid.jpg');
+
+      final uploadTask = storageRef.putFile(imageFile);
+      final snapshot = await uploadTask;
+      final downloadUrl = await snapshot.ref.getDownloadURL();
+
+      return downloadUrl;
+    } catch (e) {
+      debugPrint('Error uploading avatar: $e');
+      rethrow;
+    }
+  }
+
+  Future<void> updateAvatar(String uid, String avatarUrl) async {
+    try {
+      await _firestore.collection('userProfiles').doc(uid).update({
+        'avatarUrl': avatarUrl,
+      });
+    } catch (e) {
+      debugPrint('Error updating avatar: $e');
+      rethrow;
+    }
+  }
+
+  Future<File?> pickAndCropImage(BuildContext context,
+      [ImageSource source = ImageSource.gallery]) async {
+    try {
+      final picker = ImagePicker();
+      final pickedFile = await picker.pickImage(
+        source: source,
+        maxWidth: 1024,
+        maxHeight: 1024,
+        imageQuality: 90,
+      );
+
+      if (pickedFile == null) {
+        debugPrint('No image selected');
+        return null;
+      }
+
+      final imageFile = File(pickedFile.path);
+
+      // Show our custom crop dialog
+      final croppedFile = await Navigator.of(context).push<File>(
+        MaterialPageRoute(
+          builder: (context) => ImageCropDialog(imageFile: imageFile),
+          fullscreenDialog: true,
+        ),
+      );
+
+      return croppedFile;
+    } catch (e) {
+      debugPrint('Error picking/cropping image: $e');
+      // Don't rethrow for user cancellations or common plugin errors
+      // Return null to indicate failure without crashing the app
+      if (e.toString().contains('Reply already submitted') ||
+          e.toString().contains('User cancelled') ||
+          e.toString().contains('ActivityNotFoundException')) {
+        debugPrint('Image picker/cropper operation cancelled or failed');
+        return null;
+      }
+      // Only rethrow for unexpected errors
       rethrow;
     }
   }

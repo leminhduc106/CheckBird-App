@@ -44,6 +44,7 @@ dependencies:
   path_provider: ^2.1.2
   flutter_material_color_picker: ^1.2.0
   image_cropper: ^8.1.0
+  image: ^4.1.7
   table_calendar: ^3.0.9
   flutter_settings_screens: ^0.3.2-null-safety
   shared_preferences: ^2.0.11
