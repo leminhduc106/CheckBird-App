@@ -61,5 +61,11 @@
   "name": "Name",
   "pleaseVerifyEmail": "Please verify your email before signing in",
   "verifyEmailToLogin": "A verification link has been sent to your email. Please verify your email address before logging in.",
-  "emailNotVerified": "Email not verified. Please check your inbox and verify your email."
+  "emailNotVerified": "Email not verified. Please check your inbox and verify your email.",
+  "reactions": "Reactions",
+  "moreReactions": "More reactions",
+  "showLess": "Show less",
+  "reactToMessage": "React to message",
+  "addReaction": "Add reaction",
+  "removeReaction": "Remove reaction"
 }

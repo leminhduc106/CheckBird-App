@@ -61,5 +61,11 @@
   "notSignedIn": "Chưa đăng nhập",
   "pleaseVerifyEmail": "Vui lòng xác thực email trước khi đăng nhập",
   "verifyEmailToLogin": "Liên kết xác thực đã được gửi đến email của bạn. Vui lòng xác thực địa chỉ email trước khi đăng nhập.",
-  "emailNotVerified": "Email chưa được xác thực. Vui lòng kiểm tra hộp thư và xác thực email."
+  "emailNotVerified": "Email chưa được xác thực. Vui lòng kiểm tra hộp thư và xác thực email.",
+  "reactions": "Biểu cảm",
+  "moreReactions": "Thêm biểu cảm",
+  "showLess": "Thu gọn",
+  "reactToMessage": "Thả cảm xúc",
+  "addReaction": "Thêm biểu cảm",
+  "removeReaction": "Xóa biểu cảm"
 }

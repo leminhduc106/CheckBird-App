@@ -22,6 +22,7 @@ class Message {
     this.replyToUserName,
     this.replyToText,
     this.replyToMediaType,
+    this.reactions = const {},
   });
 
   final MediaType mediaType;
@@ -36,6 +37,8 @@ class Message {
   final String? replyToUserName;
   final String? replyToText;
   final MediaType? replyToMediaType;
+  // Map of emoji -> list of user IDs who reacted with that emoji
+  final Map<String, List<String>> reactions;
 }
 
 class MessagesController {
@@ -142,6 +145,24 @@ class MessagesController {
         } else if (msgData['type'] == 'image') {
           type = MediaType.image;
         }
+
+        // Parse reactions from Firestore
+        // New format: Map<emoji, Map<userId, userName>>
+        // Old format: Map<emoji, List<userId>> for backward compatibility
+        Map<String, List<String>> reactions = {};
+        if (msgData['reactions'] != null) {
+          final reactionsData = msgData['reactions'] as Map<String, dynamic>;
+          reactionsData.forEach((emoji, value) {
+            if (value is Map) {
+              // New format: Map<userId, userName>
+              reactions[emoji] = (value as Map<String, dynamic>).keys.toList();
+            } else if (value is List) {
+              // Old format: List<userId> (backward compatibility)
+              reactions[emoji] = value.map((id) => id.toString()).toList();
+            }
+          });
+        }
+
         return Message(
           mediaType: type,
           id: msg.id,
@@ -167,8 +188,165 @@ class MessagesController {
                   : (msgData['replyToMediaType'] == 'image'
                       ? MediaType.image
                       : MediaType.text),
+          reactions: reactions,
         );
       }).toList();
     });
+  }
+
+  // Add or update a reaction to a message
+  // Single reaction per user (like WhatsApp/iMessage) - selecting new emoji replaces old one
+  Future<void> addReaction({
+    required String messageId,
+    required String emoji,
+    required ChatType chatType,
+    required String groupId,
+    String? topicId,
+  }) async {
+    final userId = Authentication.user!.uid;
+    final userName = Authentication.user!.displayName ?? 'Unknown User';
+    final messageRef = _textRef(chatType, groupId, topicId).doc(messageId);
+
+    await FirebaseFirestore.instance.runTransaction((transaction) async {
+      final messageDoc = await transaction.get(messageRef);
+      if (!messageDoc.exists) return;
+
+      final data = messageDoc.data() as Map<String, dynamic>;
+      final reactions = Map<String, dynamic>.from(data['reactions'] ?? {});
+
+      // Store reactions as Map<emoji, Map<userId, userName>>
+      // This allows us to get usernames without extra queries
+
+      // Check if user already has this exact emoji (for toggle)
+      bool hasThisEmoji = false;
+      if (reactions[emoji] != null && reactions[emoji] is Map) {
+        final emojiMap = reactions[emoji] as Map<String, dynamic>;
+        hasThisEmoji = emojiMap.containsKey(userId);
+      }
+
+      // Remove user's previous reactions from ALL emojis (single reaction per user)
+      final keysToRemove = <String>[];
+      reactions.forEach((emojiKey, value) {
+        if (value is Map) {
+          final reactionMap = Map<String, dynamic>.from(value);
+          reactionMap.remove(userId);
+          if (reactionMap.isEmpty) {
+            keysToRemove.add(emojiKey);
+          } else {
+            reactions[emojiKey] = reactionMap;
+          }
+        }
+      });
+
+      // Remove empty emoji entries
+      for (final key in keysToRemove) {
+        reactions.remove(key);
+      }
+
+      // If user already had this exact emoji, it's a toggle to remove - don't add it back
+      if (!hasThisEmoji) {
+        // Add the new reaction
+        Map<String, dynamic> emojiReactions = {};
+        if (reactions[emoji] != null && reactions[emoji] is Map) {
+          emojiReactions = Map<String, dynamic>.from(reactions[emoji]);
+        }
+        emojiReactions[userId] = userName;
+        reactions[emoji] = emojiReactions;
+      }
+
+      transaction.update(messageRef, {'reactions': reactions});
+    });
+  }
+
+  // Remove a specific user's reaction
+  Future<void> removeReaction({
+    required String messageId,
+    required String emoji,
+    required ChatType chatType,
+    required String groupId,
+    String? topicId,
+  }) async {
+    final userId = Authentication.user!.uid;
+    final messageRef = _textRef(chatType, groupId, topicId).doc(messageId);
+
+    await FirebaseFirestore.instance.runTransaction((transaction) async {
+      final messageDoc = await transaction.get(messageRef);
+      if (!messageDoc.exists) return;
+
+      final data = messageDoc.data() as Map<String, dynamic>;
+      final reactions = Map<String, dynamic>.from(data['reactions'] ?? {});
+
+      if (reactions[emoji] != null) {
+        List<String> userIds = List<String>.from(reactions[emoji]);
+        userIds.remove(userId);
+
+        if (userIds.isEmpty) {
+          reactions.remove(emoji);
+        } else {
+          reactions[emoji] = userIds;
+        }
+      }
+
+      transaction.update(messageRef, {'reactions': reactions});
+    });
+  }
+
+  // Get user names for reaction details
+  Future<List<String>> getUserNamesForReaction({
+    required String messageId,
+    required String emoji,
+    required ChatType chatType,
+    required String groupId,
+    String? topicId,
+  }) async {
+    final messageRef = _textRef(chatType, groupId, topicId).doc(messageId);
+    final messageDoc = await messageRef.get();
+
+    if (!messageDoc.exists) return [];
+
+    final data = messageDoc.data() as Map<String, dynamic>;
+    final reactions = data['reactions'] as Map<String, dynamic>? ?? {};
+
+    if (!reactions.containsKey(emoji)) return [];
+
+    final emojiReactions = reactions[emoji];
+
+    // New format: Map<userId, userName>
+    if (emojiReactions is Map) {
+      return (emojiReactions as Map<String, dynamic>)
+          .values
+          .map((name) => name.toString())
+          .toList();
+    }
+
+    // Old format fallback: List<userId> - try to get names from messages
+    if (emojiReactions is List) {
+      final userIds = emojiReactions.map((id) => id.toString()).toList();
+      final userNames = <String>[];
+
+      // Try to find usernames from recent messages in the same chat
+      final messagesSnapshot = await _textRef(chatType, groupId, topicId)
+          .where('userId', whereIn: userIds)
+          .limit(userIds.length)
+          .get();
+
+      final foundUserNames = <String, String>{};
+      for (var doc in messagesSnapshot.docs) {
+        final msgData = doc.data() as Map<String, dynamic>;
+        final userId = msgData['userId'];
+        final userName = msgData['userName'];
+        if (userId != null && userName != null) {
+          foundUserNames[userId] = userName;
+        }
+      }
+
+      for (var userId in userIds) {
+        userNames.add(foundUserNames[userId] ?? 'Unknown User');
+      }
+
+      return userNames;
+    }
+
+    return [];
   }
 }

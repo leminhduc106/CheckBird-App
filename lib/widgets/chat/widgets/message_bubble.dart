@@ -1,5 +1,9 @@
+import 'package:check_bird/models/chat/chat_type.dart';
 import 'package:check_bird/widgets/chat/models/media_type.dart';
+import 'package:check_bird/widgets/chat/models/messages_controller.dart';
 import 'package:check_bird/widgets/chat/widgets/image_view_chat_screen.dart';
+import 'package:check_bird/widgets/chat/widgets/reaction_display.dart';
+import 'package:check_bird/widgets/chat/widgets/reaction_picker.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -7,28 +11,38 @@ import 'package:intl/intl.dart';
 class MessageBubble extends StatefulWidget {
   const MessageBubble({
     super.key,
+    required this.messageId,
     required this.message,
     required this.photoUrl,
     required this.isMe,
     required this.senderName,
     required this.sendAt,
     required this.mediaType,
+    required this.chatType,
+    required this.groupId,
+    this.topicId,
     this.replyToUserName,
     this.replyToText,
     this.replyToMediaType,
     this.onReply,
+    this.reactions = const {},
   });
 
+  final String messageId;
   final MediaType mediaType;
   final Timestamp sendAt;
   final String senderName;
   final String message;
   final bool isMe;
   final String photoUrl;
+  final ChatType chatType;
+  final String groupId;
+  final String? topicId;
   final String? replyToUserName;
   final String? replyToText;
   final MediaType? replyToMediaType;
   final VoidCallback? onReply;
+  final Map<String, List<String>> reactions;
 
   @override
   State<MessageBubble> createState() => _MessageBubbleState();
@@ -50,6 +64,38 @@ class _MessageBubbleState extends State<MessageBubble> {
       return sendTimeFormat.format(sendTime);
     }
     return sendTimeFormat.add_yMMMd().format(sendTime);
+  }
+
+  void _showReactionPicker(BuildContext context) {
+    showReactionPicker(context, (emoji) {
+      MessagesController().addReaction(
+        messageId: widget.messageId,
+        emoji: emoji,
+        chatType: widget.chatType,
+        groupId: widget.groupId,
+        topicId: widget.topicId,
+      );
+    });
+  }
+
+  void _showReactionDetails(String emoji, List<String> userIds) async {
+    final userNames = await MessagesController().getUserNamesForReaction(
+      messageId: widget.messageId,
+      emoji: emoji,
+      chatType: widget.chatType,
+      groupId: widget.groupId,
+      topicId: widget.topicId,
+    );
+
+    if (!mounted) return;
+
+    showDialog(
+      context: context,
+      builder: (context) => ReactionDetailsDialog(
+        emoji: emoji,
+        userNames: userNames,
+      ),
+    );
   }
 
   @override
@@ -106,68 +152,84 @@ class _MessageBubbleState extends State<MessageBubble> {
                   0,
                   0,
                 ),
-                child: Row(
-                  mainAxisAlignment: widget.isMe
-                      ? MainAxisAlignment.end
-                      : MainAxisAlignment.start,
+                child: Column(
+                  crossAxisAlignment: widget.isMe
+                      ? CrossAxisAlignment.end
+                      : CrossAxisAlignment.start,
                   children: [
-                    if (!widget.isMe)
-                      Container(
-                        margin: const EdgeInsets.all(10),
-                        child: CircleAvatar(
-                          backgroundImage: (widget.photoUrl.isNotEmpty)
-                              ? NetworkImage(widget.photoUrl)
-                              : null,
-                        ),
-                      ),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: widget.isMe
-                            ? CrossAxisAlignment.end
-                            : CrossAxisAlignment.start,
-                        children: [
-                          if (!widget.isMe)
-                            Text(
-                              widget.senderName,
-                              style: TextStyle(
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .onBackground,
-                                  fontSize: 13),
+                    Row(
+                      mainAxisAlignment: widget.isMe
+                          ? MainAxisAlignment.end
+                          : MainAxisAlignment.start,
+                      children: [
+                        if (!widget.isMe)
+                          Container(
+                            margin: const EdgeInsets.all(10),
+                            child: CircleAvatar(
+                              backgroundImage: (widget.photoUrl.isNotEmpty)
+                                  ? NetworkImage(widget.photoUrl)
+                                  : null,
                             ),
-                          if (widget.mediaType == MediaType.text)
-                            TextMedia(
-                              constraints: constraint,
-                              text: widget.message,
-                              onPress: () {
-                                setState(() {
-                                  showTime = !showTime;
-                                });
-                              },
-                              onLongPress: widget.onReply,
-                              isMe: widget.isMe,
-                              showTime: showTime,
-                              replyPreview: _replyPreview(context),
-                            )
-                          else if (widget.mediaType == MediaType.image)
-                            ImageMedia(
-                              isMe: widget.isMe,
-                              onPress: () {
-                                Navigator.of(context).push(
-                                  MaterialPageRoute(
-                                    builder: (context) => ImageViewChatScreen(
-                                      imageUrl: widget.message,
-                                    ),
-                                  ),
-                                );
-                              },
-                              constraints: constraint,
-                              imageUrl: widget.message,
-                              onLongPress: widget.onReply,
-                              replyPreview: _replyPreview(context),
-                            )
-                        ],
-                      ),
+                          ),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: widget.isMe
+                                ? CrossAxisAlignment.end
+                                : CrossAxisAlignment.start,
+                            children: [
+                              if (!widget.isMe)
+                                Text(
+                                  widget.senderName,
+                                  style: TextStyle(
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onBackground,
+                                      fontSize: 13),
+                                ),
+                              if (widget.mediaType == MediaType.text)
+                                TextMedia(
+                                  constraints: constraint,
+                                  text: widget.message,
+                                  onPress: () {
+                                    setState(() {
+                                      showTime = !showTime;
+                                    });
+                                  },
+                                  onLongPress: () =>
+                                      _showReactionPicker(context),
+                                  isMe: widget.isMe,
+                                  showTime: showTime,
+                                  replyPreview: _replyPreview(context),
+                                )
+                              else if (widget.mediaType == MediaType.image)
+                                ImageMedia(
+                                  isMe: widget.isMe,
+                                  onPress: () {
+                                    Navigator.of(context).push(
+                                      MaterialPageRoute(
+                                        builder: (context) =>
+                                            ImageViewChatScreen(
+                                          imageUrl: widget.message,
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                  constraints: constraint,
+                                  imageUrl: widget.message,
+                                  onLongPress: () =>
+                                      _showReactionPicker(context),
+                                  replyPreview: _replyPreview(context),
+                                )
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    // Display reactions below message
+                    ReactionDisplay(
+                      reactions: widget.reactions,
+                      isMe: widget.isMe,
+                      onReactionTap: _showReactionDetails,
                     ),
                   ],
                 ),

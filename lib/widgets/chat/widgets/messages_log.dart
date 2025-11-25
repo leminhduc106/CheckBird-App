@@ -37,19 +37,24 @@ class _MessagesLogState extends State<MessagesLog> {
               child: ListView.builder(
                 controller: widget.messagesLogController,
                 itemBuilder: (context, index) {
+                  final message = messages.data![index];
                   return MessageBubble(
-                    key: ValueKey(messages.data![index].id),
-                    message: messages.data![index].data,
-                    isMe: messages.data![index].isMe,
-                    photoUrl: messages.data![index].userImageUrl,
-                    senderName: messages.data![index].userName,
-                    sendAt: messages.data![index].created,
-                    mediaType: messages.data![index].mediaType,
-                    replyToUserName: messages.data![index].replyToUserName,
-                    replyToText: messages.data![index].replyToText,
-                    replyToMediaType: messages.data![index].replyToMediaType,
-                    onReply: () => widget.replyTargetNotifier.value =
-                        messages.data![index],
+                    key: ValueKey(message.id),
+                    messageId: message.id,
+                    message: message.data,
+                    isMe: message.isMe,
+                    photoUrl: message.userImageUrl,
+                    senderName: message.userName,
+                    sendAt: message.created,
+                    mediaType: message.mediaType,
+                    chatType: widget.chatScreenArguments.chatType,
+                    groupId: widget.chatScreenArguments.groupId,
+                    topicId: widget.chatScreenArguments.topicId,
+                    replyToUserName: message.replyToUserName,
+                    replyToText: message.replyToText,
+                    replyToMediaType: message.replyToMediaType,
+                    reactions: message.reactions,
+                    onReply: () => widget.replyTargetNotifier.value = message,
                   );
                 },
                 reverse: true,
