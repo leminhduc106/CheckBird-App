@@ -1,5 +1,6 @@
 import 'package:check_bird/screens/groups/models/groups_controller.dart';
 import 'package:check_bird/screens/groups/widgets/create_group/create_group_screen.dart';
+import 'package:check_bird/screens/groups/widgets/discover_groups/discover_groups_screen.dart';
 import 'package:check_bird/screens/groups/widgets/group_item.dart';
 import 'package:check_bird/screens/groups/widgets/search_group/search_group_screen.dart';
 import 'package:check_bird/services/authentication.dart';
@@ -27,14 +28,31 @@ class GroupScreen extends StatelessWidget {
         ),
         title: Text(l10n?.groupTitle ?? 'Group'),
         actions: [
-          // Only show create group button if user is authenticated
-          if (Authentication.user != null)
+          // Only show buttons if user is authenticated
+          if (Authentication.user != null) ...[
             IconButton(
-                onPressed: () {
-                  Navigator.of(context).push(MaterialPageRoute(
-                      builder: (context) => const CreateGroupScreen()));
-                },
-                icon: const Icon(Icons.group_add)),
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => const DiscoverGroupsScreen(),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.explore_rounded),
+              tooltip: 'Discover Groups',
+            ),
+            IconButton(
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => const CreateGroupScreen(),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.group_add),
+              tooltip: 'Create Group',
+            ),
+          ],
           const FocusButton(),
         ],
       ),
@@ -112,8 +130,65 @@ class GroupScreen extends StatelessWidget {
                         final data = snapshot.data?.docs;
                         if (data == null || data.isEmpty) {
                           return Center(
-                            child: Text(l10n?.noGroupsMessage ??
-                                'Join some groups first! Or create one...'),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.explore_rounded,
+                                  size: 80,
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .primary
+                                      .withOpacity(0.5),
+                                ),
+                                const SizedBox(height: 24),
+                                Text(
+                                  l10n?.noGroupsMessage ??
+                                      'Join some groups first!',
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .titleMedium
+                                      ?.copyWith(
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                  textAlign: TextAlign.center,
+                                ),
+                                const SizedBox(height: 12),
+                                Text(
+                                  'Discover groups to connect with others',
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .bodyMedium
+                                      ?.copyWith(
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .onSurface
+                                            .withOpacity(0.6),
+                                      ),
+                                  textAlign: TextAlign.center,
+                                ),
+                                const SizedBox(height: 32),
+                                FilledButton.icon(
+                                  onPressed: () {
+                                    Navigator.of(context).push(
+                                      MaterialPageRoute(
+                                        builder: (context) =>
+                                            const DiscoverGroupsScreen(),
+                                      ),
+                                    );
+                                  },
+                                  icon: const Icon(Icons.explore_rounded),
+                                  label: Text(
+                                      l10n?.browseGroups ?? 'Browse Groups'),
+                                  style: FilledButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 24,
+                                      vertical: 12,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
                           );
                         }
                         return ListView.separated(

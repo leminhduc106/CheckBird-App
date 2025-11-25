@@ -102,6 +102,54 @@ class GroupsController {
     return groupDoc.exists;
   }
 
+  Future<List<Group>> getAllGroups({int limit = 50}) async {
+    final db = FirebaseFirestore.instance;
+    final groupsSnapshot = await db
+        .collection('groups')
+        .orderBy('createdAt', descending: true)
+        .limit(limit)
+        .get();
+
+    List<Group> groups = [];
+    for (var doc in groupsSnapshot.docs) {
+      final data = doc.data();
+      groups.add(Group(
+        groupName: data['groupName'],
+        groupId: doc.id,
+        numOfMember: data['numOfMember'] ?? 0,
+        createdAt: data['createdAt'],
+        groupsAvtUrl: data['groupsAvtUrl'],
+        groupDescription: data['groupDescription'],
+        numOfTasks: data['numOfTasks'] ?? 0,
+      ));
+    }
+    return groups;
+  }
+
+  Future<List<Group>> getPopularGroups({int limit = 20}) async {
+    final db = FirebaseFirestore.instance;
+    final groupsSnapshot = await db
+        .collection('groups')
+        .orderBy('numOfMember', descending: true)
+        .limit(limit)
+        .get();
+
+    List<Group> groups = [];
+    for (var doc in groupsSnapshot.docs) {
+      final data = doc.data();
+      groups.add(Group(
+        groupName: data['groupName'],
+        groupId: doc.id,
+        numOfMember: data['numOfMember'] ?? 0,
+        createdAt: data['createdAt'],
+        groupsAvtUrl: data['groupsAvtUrl'],
+        groupDescription: data['groupDescription'],
+        numOfTasks: data['numOfTasks'] ?? 0,
+      ));
+    }
+    return groups;
+  }
+
   Future<String> _sendImg({required File image}) async {
     var ref = FirebaseStorage.instance.ref().child('img').child('groups');
     var imgName = const Uuid().v4();
