@@ -1,7 +1,7 @@
 import 'package:check_bird/models/user_profile.dart';
 import 'package:check_bird/services/authentication.dart';
 import 'package:check_bird/services/profile_controller.dart';
-import 'package:check_bird/services/rewards_controller.dart';
+import 'package:check_bird/services/rewards_service.dart';
 import 'package:flutter/material.dart';
 
 class InventoryTab extends StatefulWidget {
@@ -20,7 +20,7 @@ class InventoryTab extends StatefulWidget {
 
 class _InventoryTabState extends State<InventoryTab> {
   final _profileController = ProfileController();
-  final _rewardsController = RewardsController();
+  final _rewardsService = RewardsService();
 
   Future<void> _selectFrame(String frameId) async {
     if (Authentication.user == null) return;
@@ -54,8 +54,9 @@ class _InventoryTabState extends State<InventoryTab> {
   Future<void> _purchaseFrame(ProfileFrame frame) async {
     if (Authentication.user == null) return;
 
-    await _rewardsController.load();
-    if (_rewardsController.coins < frame.price) {
+    final rewards =
+        await _rewardsService.getUserRewards(Authentication.user!.uid);
+    if (rewards.coins < frame.price) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Not enough coins')),
@@ -64,12 +65,24 @@ class _InventoryTabState extends State<InventoryTab> {
     }
 
     try {
+      final success = await _rewardsService.spendCoins(
+        userId: Authentication.user!.uid,
+        amount: frame.price,
+      );
+
+      if (!success) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Purchase failed')),
+        );
+        return;
+      }
+
       await _profileController.purchaseItem(
         Authentication.user!.uid,
         frame.id,
         'frame',
       );
-      await _rewardsController.addCoins(-frame.price);
       widget.onRefresh();
 
       if (!mounted) return;
@@ -87,8 +100,9 @@ class _InventoryTabState extends State<InventoryTab> {
   Future<void> _purchaseBackground(ProfileBackground background) async {
     if (Authentication.user == null) return;
 
-    await _rewardsController.load();
-    if (_rewardsController.coins < background.price) {
+    final rewards =
+        await _rewardsService.getUserRewards(Authentication.user!.uid);
+    if (rewards.coins < background.price) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Not enough coins')),
@@ -97,12 +111,24 @@ class _InventoryTabState extends State<InventoryTab> {
     }
 
     try {
+      final success = await _rewardsService.spendCoins(
+        userId: Authentication.user!.uid,
+        amount: background.price,
+      );
+
+      if (!success) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Purchase failed')),
+        );
+        return;
+      }
+
       await _profileController.purchaseItem(
         Authentication.user!.uid,
         background.id,
         'background',
       );
-      await _rewardsController.addCoins(-background.price);
       widget.onRefresh();
 
       if (!mounted) return;

@@ -5,6 +5,7 @@ import 'package:check_bird/screens/task/widgets/show_date.dart';
 import 'package:check_bird/services/notification.dart';
 import 'package:check_bird/services/authentication.dart';
 import 'package:check_bird/widgets/focus/focus_widget.dart';
+import 'package:check_bird/widgets/rewards/daily_reward_dialog.dart';
 import 'package:flutter/material.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -22,6 +23,10 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     NotificationService().requestPermission();
+    // Check for daily login rewards
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      DailyRewardDialog.checkAndShow(context);
+    });
   }
 
   @override
@@ -63,8 +68,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: Text(
                     "Groups",
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
+                          fontWeight: FontWeight.w600,
+                        ),
                   ),
                 ),
                 const SizedBox(height: 8),

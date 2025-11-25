@@ -1,7 +1,8 @@
 import 'package:check_bird/models/todo/todo.dart';
 import 'package:check_bird/models/todo/todo_type.dart';
 import 'package:check_bird/screens/create_task/create_todo_screen.dart';
-import 'package:check_bird/services/rewards_controller.dart';
+import 'package:check_bird/services/authentication.dart';
+import 'package:check_bird/services/rewards_service.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -33,7 +34,7 @@ class TodoItem extends StatelessWidget {
       opacity: todo.isCompleted ? 0.6 : 1.0,
       duration: const Duration(milliseconds: 200),
       child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+        margin: const EdgeInsets.symmetric(horizontal: 16),
         child: Card(
           elevation: todo.isCompleted ? 0 : 1,
           color: Color(todo.backgroundColor),
@@ -190,20 +191,67 @@ class TodoItem extends StatelessWidget {
                             value: todo.isCompleted,
                             shape: const CircleBorder(),
                             onChanged: (_) async {
+                              final userId = Authentication.user?.uid;
+                              if (userId == null) return;
+
                               final wasCompleted = todo.isCompleted;
                               todo.toggleCompleted();
+
+                              // Only award rewards when marking as complete (not when uncompleting)
                               if (!wasCompleted && todo.isCompleted) {
-                                RewardsController().addCoins(1);
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text(
-                                      isGroupTask
-                                          ? 'Shared your progress with the group and earned +1 coin!'
-                                          : '+1 coin for completing a task!',
-                                    ),
-                                    duration: const Duration(seconds: 1),
-                                  ),
+                                if (todo.id == null || todo.id!.isEmpty) {
+                                  if (context.mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text(
+                                          'Error: Task ID is missing. Please recreate this task.',
+                                        ),
+                                        duration: Duration(seconds: 3),
+                                        backgroundColor: Colors.red,
+                                      ),
+                                    );
+                                  }
+                                  return;
+                                }
+
+                                final rewards = await RewardsService()
+                                    .awardTaskCompletionRewards(
+                                  userId: userId,
+                                  taskId: todo.id!,
+                                  taskName: todo.todoName,
+                                  taskType: todo.type,
+                                  isGroupTask: isGroupTask,
                                 );
+
+                                if (rewards != null && context.mounted) {
+                                  final coins = rewards['coins'] ?? 0;
+                                  final xp = rewards['xp'] ?? 0;
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                        isGroupTask
+                                            ? 'Shared progress with group! +$coins coins, +$xp XP'
+                                            : '+$coins coins, +$xp XP for completing!',
+                                      ),
+                                      duration: const Duration(seconds: 2),
+                                      backgroundColor: Colors.green,
+                                    ),
+                                  );
+                                } else if (wasCompleted == false &&
+                                    context.mounted) {
+                                  // No rewards earned (already completed today)
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                        todo.type == TodoType.habit
+                                            ? 'Habit already completed today!'
+                                            : 'Task already completed today!',
+                                      ),
+                                      duration: const Duration(seconds: 2),
+                                      backgroundColor: Colors.orange,
+                                    ),
+                                  );
+                                }
                               }
                             },
                           ),

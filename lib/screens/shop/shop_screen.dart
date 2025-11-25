@@ -1,301 +1,514 @@
+import 'package:check_bird/models/reward/user_rewards.dart';
+import 'package:check_bird/models/shop/shop_item.dart';
+import 'package:check_bird/models/user_profile.dart';
+import 'package:check_bird/services/authentication.dart';
+import 'package:check_bird/services/profile_controller.dart';
+import 'package:check_bird/services/rewards_service.dart';
+import 'package:check_bird/services/shop_controller.dart';
 import 'package:check_bird/widgets/focus/focus_widget.dart';
-import 'package:check_bird/services/rewards_controller.dart';
 import 'package:flutter/material.dart';
 
-class ShopScreen extends StatelessWidget {
+class ShopScreen extends StatefulWidget {
   static const routeName = '/shop-screen';
 
   const ShopScreen({super.key});
 
   @override
+  State<ShopScreen> createState() => _ShopScreenState();
+}
+
+class _ShopScreenState extends State<ShopScreen>
+    with SingleTickerProviderStateMixin {
+  late TabController _tabController;
+  final ShopController _shopController = ShopController();
+  final RewardsService _rewardsService = RewardsService();
+  final ProfileController _profileController = ProfileController();
+
+  UserProfile? _userProfile;
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 4, vsync: this);
+    _loadUserProfile();
+  }
+
+  Future<void> _loadUserProfile() async {
+    if (Authentication.user == null) {
+      setState(() => _isLoading = false);
+      return;
+    }
+
+    final profile =
+        await _profileController.getUserProfile(Authentication.user!.uid);
+    setState(() {
+      _userProfile = profile;
+      _isLoading = false;
+    });
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final rewards = RewardsController();
+    if (Authentication.user == null) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Shop')),
+        body: const Center(
+          child: Text('Please sign in to access the shop'),
+        ),
+      );
+    }
+
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
-          onPressed: () {
-            Scaffold.of(context).openDrawer();
-          },
+          onPressed: () => Scaffold.of(context).openDrawer(),
           icon: const Icon(Icons.menu),
         ),
-        title: const Text("Shop"),
+        title: const Text('Shop'),
         actions: const [
-          Icon(Icons.shopping_cart_outlined),
-          SizedBox(width: 12),
           FocusButton(),
           SizedBox(width: 8),
         ],
+        bottom: TabBar(
+          controller: _tabController,
+          isScrollable: true,
+          tabAlignment: TabAlignment.center,
+          tabs: const [
+            Tab(text: 'Frames'),
+            Tab(text: 'Backgrounds'),
+            Tab(text: 'Titles'),
+            Tab(text: 'Charity'),
+          ],
+        ),
       ),
-      body: FutureBuilder(
-        future: rewards.load(),
-        builder: (context, snapshot) {
-          final coins = rewards.coins;
-          final gems = 50;
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                color: Theme.of(context)
-                    .colorScheme
-                    .surfaceContainerHighest
-                    .withValues(alpha: 0.3),
-                child: Row(
-                  children: [
-                    const Text(
-                      'Items',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFF6200EA),
-                      ),
-                    ),
-                    const Spacer(),
-                    // Coins
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: Colors.grey[300],
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Row(
-                        children: [
-                          Text(
-                            '$coins',
-                            style: const TextStyle(
-                              fontWeight: FontWeight.w600,
-                              fontSize: 16,
-                            ),
-                          ),
-                          const SizedBox(width: 4),
-                          Icon(Icons.monetization_on,
-                              color: Colors.grey[700], size: 20),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    // Gems
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: Colors.pink[100],
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Row(
-                        children: [
-                          Text(
-                            '$gems',
-                            style: const TextStyle(
-                              fontWeight: FontWeight.w600,
-                              fontSize: 16,
-                            ),
-                          ),
-                          const SizedBox(width: 4),
-                          const Icon(Icons.diamond,
-                              color: Colors.pink, size: 20),
-                        ],
-                      ),
-                    ),
-                  ],
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : Column(
+              children: [
+                // Currency header with real-time updates
+                StreamBuilder<UserRewards>(
+                  stream: _rewardsService
+                      .getUserRewardsStream(Authentication.user!.uid),
+                  builder: (context, snapshot) {
+                    final rewards = snapshot.data ??
+                        UserRewards(userId: Authentication.user!.uid);
+                    return _buildCurrencyHeader(rewards);
+                  },
                 ),
+                Expanded(
+                  child: TabBarView(
+                    controller: _tabController,
+                    children: [
+                      _buildShopCategory(ShopCategory.frames),
+                      _buildShopCategory(ShopCategory.backgrounds),
+                      _buildShopCategory(ShopCategory.titles),
+                      _buildShopCategory(ShopCategory.charityPacks),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+    );
+  }
+
+  Widget _buildCurrencyHeader(UserRewards rewards) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            Theme.of(context).colorScheme.primaryContainer,
+            Theme.of(context).colorScheme.tertiaryContainer,
+          ],
+        ),
+      ),
+      child: Row(
+        children: [
+          // Level badge
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: Colors.amber,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.amber.withOpacity(0.3),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.military_tech, size: 18, color: Colors.white),
+                const SizedBox(width: 4),
+                Text(
+                  'Lv ${rewards.level}',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          // Coins
+          Expanded(
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
               ),
-              Expanded(
-                child: ListView(
-                  padding: const EdgeInsets.all(16),
-                  children: [
-                    // Frames Category
-                    const Text(
-                      'Frames',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF6200EA),
-                      ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.monetization_on,
+                      color: Colors.amber, size: 20),
+                  const SizedBox(width: 6),
+                  Text(
+                    '${rewards.coins}',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
                     ),
-                    const SizedBox(height: 12),
-                    SizedBox(
-                      height: 160,
-                      child: ListView(
-                        scrollDirection: Axis.horizontal,
-                        children: const [
-                          _ShopItemCard(
-                            name: 'Challenger',
-                            price: 10,
-                            currencyType: 'coins',
-                            imagePath: 'assets/images/frame_challenger.png',
-                          ),
-                          _ShopItemCard(
-                            name: 'Purple',
-                            price: 5,
-                            currencyType: 'coins',
-                            imagePath: 'assets/images/frame_purple.png',
-                          ),
-                          _ShopItemCard(
-                            name: 'HangHieu',
-                            price: 12,
-                            currencyType: 'coins',
-                            imagePath: 'assets/images/frame_hanghieu.png',
-                          ),
-                        ],
-                      ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          // Gems
+          Expanded(
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.diamond, color: Colors.pink, size: 20),
+                  const SizedBox(width: 6),
+                  Text(
+                    '${rewards.gems}',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
                     ),
-                    const SizedBox(height: 24),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
-                    const Text(
-                      'Backgrounds',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF6200EA),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    SizedBox(
-                      height: 140,
-                      child: ListView(
-                        scrollDirection: Axis.horizontal,
-                        children: const [
-                          _ShopItemCard(
-                            name: 'Space',
-                            price: 5,
-                            currencyType: 'coins',
-                            imagePath: 'assets/images/bg_space.png',
-                            isWide: true,
-                          ),
-                          _ShopItemCard(
-                            name: 'Wjbu',
-                            price: 7,
-                            currencyType: 'coins',
-                            imagePath: 'assets/images/bg_wjbu.png',
-                            isWide: true,
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 24),
+  Widget _buildShopCategory(ShopCategory category) {
+    final items = _shopController.getItemsByCategory(category);
 
-                    // Charity Packs Category
-                    const Text(
-                      'Charity packs',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF6200EA),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    SizedBox(
-                      height: 160,
-                      child: ListView(
-                        scrollDirection: Axis.horizontal,
-                        children: const [
-                          _ShopItemCard(
-                            name: 'Book pack',
-                            price: 5,
-                            currencyType: 'gems',
-                            imagePath: 'assets/images/charity_books.png',
-                          ),
-                          _ShopItemCard(
-                            name: 'Plant a tree',
-                            price: 8,
-                            currencyType: 'gems',
-                            imagePath: 'assets/images/charity_tree.png',
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 80), // Space for bottom nav
-                  ],
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: items.length,
+      itemBuilder: (context, index) {
+        return _ShopItemCard(
+          item: items[index],
+          isOwned: _isItemOwned(items[index]),
+          onPurchase: () => _handlePurchase(items[index]),
+        );
+      },
+    );
+  }
+
+  bool _isItemOwned(ShopItem item) {
+    if (_userProfile == null) return false;
+
+    switch (item.category) {
+      case ShopCategory.frames:
+        return _userProfile!.ownedFrames.contains(item.id);
+      case ShopCategory.backgrounds:
+        return _userProfile!.ownedBackgrounds.contains(item.id);
+      case ShopCategory.titles:
+        return _userProfile!.ownedTitles.contains(item.id);
+      case ShopCategory.charityPacks:
+        return false; // Can buy multiple times
+    }
+  }
+
+  Future<void> _handlePurchase(ShopItem item) async {
+    if (Authentication.user == null) return;
+
+    // Show confirmation dialog
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Purchase ${item.name}?'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(item.description),
+            if (item is CharityPackItem) ...[
+              const SizedBox(height: 12),
+              Text(
+                item.charityDescription,
+                style: TextStyle(
+                  color: Colors.grey[600],
+                  fontSize: 13,
                 ),
               ),
             ],
-          );
-        },
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Icon(
+                  item.currencyType == ShopCurrencyType.coins
+                      ? Icons.monetization_on
+                      : Icons.diamond,
+                  color: item.currencyType == ShopCurrencyType.coins
+                      ? Colors.amber
+                      : Colors.pink,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  '${item.price} ${item.currencyType == ShopCurrencyType.coins ? 'Coins' : 'Gems'}',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Purchase'),
+          ),
+        ],
       ),
     );
+
+    if (confirmed != true) return;
+
+    // Show loading
+    if (!mounted) return;
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(child: CircularProgressIndicator()),
+    );
+
+    // Attempt purchase
+    final success = await _shopController.purchaseItem(
+      userId: Authentication.user!.uid,
+      item: item,
+    );
+
+    if (!mounted) return;
+    Navigator.pop(context); // Close loading
+
+    if (success) {
+      await _loadUserProfile(); // Reload profile
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            item.category == ShopCategory.charityPacks
+                ? 'Thank you for your donation! 💚'
+                : 'Purchased ${item.name}!',
+          ),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Purchase failed. Check your balance!'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 }
 
 class _ShopItemCard extends StatelessWidget {
-  const _ShopItemCard({
-    required this.name,
-    required this.price,
-    required this.currencyType,
-    this.imagePath,
-    this.isWide = false,
-  });
+  final ShopItem item;
+  final bool isOwned;
+  final VoidCallback onPurchase;
 
-  final String name;
-  final int price;
-  final String currencyType;
-  final String? imagePath;
-  final bool isWide;
+  const _ShopItemCard({
+    required this.item,
+    required this.isOwned,
+    required this.onPurchase,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: isWide ? 200 : 120,
-      margin: const EdgeInsets.only(right: 12),
-      child: Column(
-        children: [
-          Expanded(
-            child: Container(
-              decoration: BoxDecoration(
-                color: Colors.grey[200],
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: Colors.grey[300]!,
-                  width: 2,
-                ),
-              ),
-              child: Center(
-                child: Icon(
-                  currencyType == 'gems'
-                      ? Icons.volunteer_activism
-                      : Icons.image_outlined,
-                  size: 40,
-                  color: Colors.grey[400],
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(height: 8),
-          // Item Name
-          Text(
-            name,
-            style: const TextStyle(
-              fontWeight: FontWeight.w600,
-              fontSize: 14,
-            ),
-            textAlign: TextAlign.center,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-          const SizedBox(height: 4),
-          // Price
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      elevation: isOwned ? 0 : 2,
+      child: InkWell(
+        onTap: isOwned ? null : onPurchase,
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
             children: [
-              Text(
-                '$price',
-                style: const TextStyle(
-                  fontWeight: FontWeight.w600,
-                  fontSize: 14,
+              // Icon/Image
+              Container(
+                width: 60,
+                height: 60,
+                decoration: BoxDecoration(
+                  color: isOwned
+                      ? colorScheme.surfaceContainerHighest
+                      : colorScheme.primaryContainer,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Center(
+                  child: Icon(
+                    _getIconForCategory(item.category),
+                    size: 32,
+                    color: isOwned
+                        ? colorScheme.onSurfaceVariant
+                        : colorScheme.onPrimaryContainer,
+                  ),
                 ),
               ),
-              const SizedBox(width: 4),
-              Icon(
-                currencyType == 'gems' ? Icons.diamond : Icons.monetization_on,
-                size: 16,
-                color: currencyType == 'gems' ? Colors.pink : Colors.amber,
+              const SizedBox(width: 16),
+              // Info
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      item.name,
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: isOwned ? colorScheme.onSurfaceVariant : null,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      item.description,
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
               ),
+              const SizedBox(width: 12),
+              // Price or Owned badge
+              if (isOwned)
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: Colors.green,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: const Text(
+                    'OWNED',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                    ),
+                  ),
+                )
+              else
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: item.currencyType == ShopCurrencyType.coins
+                          ? [Colors.amber.shade400, Colors.amber.shade600]
+                          : [Colors.pink.shade300, Colors.pink.shade500],
+                    ),
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: (item.currencyType == ShopCurrencyType.coins
+                                ? Colors.amber
+                                : Colors.pink)
+                            .withOpacity(0.3),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        item.currencyType == ShopCurrencyType.coins
+                            ? Icons.monetization_on
+                            : Icons.diamond,
+                        size: 16,
+                        color: Colors.white,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        '${item.price}',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
             ],
           ),
-        ],
+        ),
       ),
     );
+  }
+
+  IconData _getIconForCategory(ShopCategory category) {
+    switch (category) {
+      case ShopCategory.frames:
+        return Icons.filter_frames_rounded;
+      case ShopCategory.backgrounds:
+        return Icons.wallpaper_rounded;
+      case ShopCategory.titles:
+        return Icons.workspace_premium_rounded;
+      case ShopCategory.charityPacks:
+        return Icons.volunteer_activism_rounded;
+    }
   }
 }

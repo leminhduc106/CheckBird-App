@@ -1,4 +1,5 @@
 import 'package:check_bird/models/todo/todo_type.dart';
+import 'package:flutter/foundation.dart';
 import 'package:hive/hive.dart';
 import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
@@ -8,6 +9,27 @@ import 'todo.dart';
 class TodoListController {
   Future<void> openBox() async {
     await Hive.openBox<Todo>('todos');
+    await _ensureAllTodosHaveIds();
+  }
+
+  /// Migration function: Assigns UUIDs to todos that don't have IDs
+  Future<void> _ensureAllTodosHaveIds() async {
+    final box = getTodoList();
+    bool needsSave = false;
+
+    for (var todo in box.values) {
+      if (todo.id == null || todo.id!.isEmpty) {
+        todo.id = const Uuid().v1();
+        await todo.save();
+        needsSave = true;
+        debugPrint(
+            'Migration: Assigned ID ${todo.id} to todo: ${todo.todoName}');
+      }
+    }
+
+    if (needsSave) {
+      debugPrint('Migration complete: All todos now have IDs');
+    }
   }
 
   Future<void> syncTodoList() async {
@@ -32,7 +54,7 @@ class TodoListController {
     todo.createdDate = now;
     todo.lastModified = now;
 
-    todoList.add(todo);
+    await todoList.add(todo);
 
     if (todo.type == TodoType.task && todo.notification != null) {
       todo.notificationId =
