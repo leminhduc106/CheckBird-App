@@ -4,8 +4,10 @@ import 'package:check_bird/widgets/chat/models/messages_controller.dart';
 import 'package:check_bird/widgets/chat/widgets/image_view_chat_screen.dart';
 import 'package:check_bird/widgets/chat/widgets/reaction_display.dart';
 import 'package:check_bird/widgets/chat/widgets/reaction_picker.dart';
+import 'package:check_bird/widgets/chat/widgets/voice_message_bubble.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
 class MessageBubble extends StatefulWidget {
@@ -76,6 +78,28 @@ class _MessageBubbleState extends State<MessageBubble> {
         topicId: widget.topicId,
       );
     });
+  }
+
+  void _showMessageOptions(BuildContext context) {
+    HapticFeedback.mediumImpact();
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => _MessageOptionsSheet(
+        isMe: widget.isMe,
+        messageId: widget.messageId,
+        messageText: widget.message,
+        mediaType: widget.mediaType,
+        chatType: widget.chatType,
+        groupId: widget.groupId,
+        topicId: widget.topicId,
+        onReply: widget.onReply,
+        onReact: () {
+          Navigator.pop(context);
+          _showReactionPicker(context);
+        },
+      ),
+    );
   }
 
   void _showReactionDetails(String emoji, List<String> userIds) async {
@@ -196,7 +220,7 @@ class _MessageBubbleState extends State<MessageBubble> {
                                     });
                                   },
                                   onLongPress: () =>
-                                      _showReactionPicker(context),
+                                      _showMessageOptions(context),
                                   isMe: widget.isMe,
                                   showTime: showTime,
                                   replyPreview: _replyPreview(context),
@@ -217,8 +241,24 @@ class _MessageBubbleState extends State<MessageBubble> {
                                   constraints: constraint,
                                   imageUrl: widget.message,
                                   onLongPress: () =>
-                                      _showReactionPicker(context),
+                                      _showMessageOptions(context),
                                   replyPreview: _replyPreview(context),
+                                )
+                              else if (widget.mediaType == MediaType.voice)
+                                Builder(
+                                  builder: (context) {
+                                    final voiceData =
+                                        VoiceMessageData.parse(widget.message);
+                                    return VoiceMessageBubble(
+                                      audioUrl: voiceData.url,
+                                      durationMs: voiceData.durationMs,
+                                      isMe: widget.isMe,
+                                      constraints: constraint,
+                                      onLongPress: () =>
+                                          _showMessageOptions(context),
+                                      replyPreview: _replyPreview(context),
+                                    );
+                                  },
                                 )
                             ],
                           ),
@@ -401,6 +441,198 @@ class TextMedia extends StatelessWidget {
               )),
         ),
       ),
+    );
+  }
+}
+
+/// Bottom sheet with message options (React, Reply, Copy, Delete)
+class _MessageOptionsSheet extends StatelessWidget {
+  const _MessageOptionsSheet({
+    required this.isMe,
+    required this.messageId,
+    required this.messageText,
+    required this.mediaType,
+    required this.chatType,
+    required this.groupId,
+    this.topicId,
+    this.onReply,
+    this.onReact,
+  });
+
+  final bool isMe;
+  final String messageId;
+  final String messageText;
+  final MediaType mediaType;
+  final ChatType chatType;
+  final String groupId;
+  final String? topicId;
+  final VoidCallback? onReply;
+  final VoidCallback? onReact;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Container(
+      margin: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Quick reactions row
+          Container(
+            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: ['❤️', '😂', '😮', '😢', '😠', '👍'].map((emoji) {
+                return GestureDetector(
+                  onTap: () {
+                    Navigator.pop(context);
+                    MessagesController().addReaction(
+                      messageId: messageId,
+                      emoji: emoji,
+                      chatType: chatType,
+                      groupId: groupId,
+                      topicId: topicId,
+                    );
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.all(8),
+                    child: Text(
+                      emoji,
+                      style: const TextStyle(fontSize: 28),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+
+          Divider(height: 1, color: theme.colorScheme.outline.withOpacity(0.2)),
+
+          // Reply option
+          if (onReply != null)
+            _OptionTile(
+              icon: Icons.reply_rounded,
+              label: 'Reply',
+              onTap: () {
+                Navigator.pop(context);
+                onReply!();
+              },
+            ),
+
+          // Copy option (only for text messages)
+          if (mediaType == MediaType.text)
+            _OptionTile(
+              icon: Icons.copy_rounded,
+              label: 'Copy',
+              onTap: () {
+                Clipboard.setData(ClipboardData(text: messageText));
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Message copied'),
+                    behavior: SnackBarBehavior.floating,
+                    duration: Duration(seconds: 2),
+                  ),
+                );
+              },
+            ),
+
+          // Delete option (only for own messages)
+          if (isMe)
+            _OptionTile(
+              icon: Icons.delete_rounded,
+              label: 'Delete',
+              isDestructive: true,
+              onTap: () {
+                Navigator.pop(context);
+                _showDeleteConfirmation(context);
+              },
+            ),
+
+          // Cancel
+          Divider(height: 1, color: theme.colorScheme.outline.withOpacity(0.2)),
+          _OptionTile(
+            icon: Icons.close_rounded,
+            label: 'Cancel',
+            onTap: () => Navigator.pop(context),
+          ),
+
+          SizedBox(height: MediaQuery.of(context).padding.bottom),
+        ],
+      ),
+    );
+  }
+
+  void _showDeleteConfirmation(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Message'),
+        content: const Text(
+            'Are you sure you want to delete this message? This action cannot be undone.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              await MessagesController().deleteMessage(
+                messageId: messageId,
+                chatType: chatType,
+                groupId: groupId,
+                topicId: topicId,
+              );
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Message deleted'),
+                    behavior: SnackBarBehavior.floating,
+                    duration: Duration(seconds: 2),
+                  ),
+                );
+              }
+            },
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _OptionTile extends StatelessWidget {
+  const _OptionTile({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+    this.isDestructive = false,
+  });
+
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+  final bool isDestructive;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final color = isDestructive ? Colors.red : theme.colorScheme.onSurface;
+
+    return ListTile(
+      leading: Icon(icon, color: color),
+      title: Text(
+        label,
+        style: TextStyle(color: color),
+      ),
+      onTap: onTap,
     );
   }
 }

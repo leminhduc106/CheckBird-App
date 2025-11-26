@@ -54,6 +54,11 @@ dependencies:
   photo_view: ^0.15.0
   emoji_picker_flutter: ^3.1.0
 
+  ## Audio/Voice Messages
+  record: ^6.0.0
+  just_audio: ^0.9.40
+  path: ^1.9.0
+
   ## NOTIFICATION
   timezone: ^0.10.0
   flutter_local_notifications: ^18.0.1

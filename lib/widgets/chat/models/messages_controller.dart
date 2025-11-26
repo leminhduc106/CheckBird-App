@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:check_bird/models/chat/chat_type.dart';
 import 'package:check_bird/services/authentication.dart';
 import 'package:check_bird/widgets/chat/models/media_type.dart';
@@ -85,6 +86,40 @@ class MessagesController {
         mediaType: MediaType.image);
   }
 
+  Future<void> sendVoice({
+    required File audioFile,
+    required int durationMs,
+    required ChatType chatType,
+    required String groupId,
+    String? topicId,
+    Message? replyTo,
+  }) async {
+    var ref = FirebaseStorage.instance
+        .ref()
+        .child('voice')
+        .child(groupId)
+        .child('group-chat');
+    if (chatType == ChatType.topicChat) {
+      ref = ref.child(topicId!);
+    }
+    var voiceName = const Uuid().v4();
+    ref = ref.child('$voiceName.m4a');
+    TaskSnapshot storageTaskSnapshot = await ref.putFile(audioFile);
+    var dowUrl = await storageTaskSnapshot.ref.getDownloadURL();
+
+    // Store URL with duration as JSON-like string: "url|duration"
+    final dataWithDuration = '$dowUrl|$durationMs';
+
+    await sendChat(
+      data: dataWithDuration,
+      chatType: chatType,
+      groupId: groupId,
+      topicId: topicId,
+      mediaType: MediaType.voice,
+      replyTo: replyTo,
+    );
+  }
+
   Future<void> sendChat(
       {required String data,
       required ChatType chatType,
@@ -99,6 +134,8 @@ class MessagesController {
       type = 'text';
     } else if (mediaType == MediaType.image) {
       type = 'image';
+    } else if (mediaType == MediaType.voice) {
+      type = 'voice';
     }
     // If there is send video feature in the future, another if check is needed here
     if (chatType == ChatType.topicChat) {
@@ -144,6 +181,10 @@ class MessagesController {
           type = MediaType.text;
         } else if (msgData['type'] == 'image') {
           type = MediaType.image;
+        } else if (msgData['type'] == 'voice') {
+          type = MediaType.voice;
+        } else {
+          type = MediaType.text; // Default fallback
         }
 
         // Parse reactions from Firestore
@@ -187,7 +228,9 @@ class MessagesController {
                   ? null
                   : (msgData['replyToMediaType'] == 'image'
                       ? MediaType.image
-                      : MediaType.text),
+                      : msgData['replyToMediaType'] == 'voice'
+                          ? MediaType.voice
+                          : MediaType.text),
           reactions: reactions,
         );
       }).toList();
@@ -289,6 +332,65 @@ class MessagesController {
 
       transaction.update(messageRef, {'reactions': reactions});
     });
+  }
+
+  // Delete a message
+  Future<void> deleteMessage({
+    required String messageId,
+    required ChatType chatType,
+    required String groupId,
+    String? topicId,
+  }) async {
+    final messageRef = _textRef(chatType, groupId, topicId).doc(messageId);
+
+    // Get the message to check if it has media to delete from storage
+    final messageDoc = await messageRef.get();
+    if (messageDoc.exists) {
+      final data = messageDoc.data() as Map<String, dynamic>;
+      final type = data['type'];
+      final messageData = data['data'] as String?;
+
+      // Delete associated media from Firebase Storage
+      if (messageData != null && (type == 'image' || type == 'voice')) {
+        try {
+          String url = messageData;
+          // For voice messages, extract URL from "url|duration" format
+          if (type == 'voice' && messageData.contains('|')) {
+            url = messageData.split('|').first;
+          }
+          // Delete from Firebase Storage
+          final ref = FirebaseStorage.instance.refFromURL(url);
+          await ref.delete();
+        } catch (e) {
+          // Ignore storage deletion errors (file might not exist)
+          debugPrint('Error deleting media from storage: $e');
+        }
+      }
+
+      // Decrement chat count for topic chats
+      if (chatType == ChatType.topicChat) {
+        var topicRef = FirebaseFirestore.instance
+            .collection('groups')
+            .doc(groupId)
+            .collection('post')
+            .doc(topicId);
+        await FirebaseFirestore.instance.runTransaction((transaction) async {
+          DocumentSnapshot postSnapshot = await transaction.get(topicRef);
+          if (postSnapshot.exists) {
+            final postData = postSnapshot.data()! as Map<String, dynamic>;
+            final currentCount = postData['chatCount'] ?? 0;
+            if (currentCount > 0) {
+              transaction.update(topicRef, {
+                "chatCount": currentCount - 1,
+              });
+            }
+          }
+        });
+      }
+    }
+
+    // Delete the message document
+    await messageRef.delete();
   }
 
   // Get user names for reaction details

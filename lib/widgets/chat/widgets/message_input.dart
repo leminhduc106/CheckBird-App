@@ -2,9 +2,12 @@ import 'package:check_bird/models/chat/chat_screen_arguments.dart';
 import 'package:check_bird/widgets/chat/models/messages_controller.dart';
 import 'package:check_bird/widgets/chat/models/media_type.dart';
 import 'package:check_bird/widgets/chat/widgets/preview_image_screen.dart';
+import 'package:check_bird/widgets/chat/widgets/voice_recorder.dart';
 import 'package:image_cropper/image_cropper.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:record/record.dart';
 import 'dart:io';
 
 class MessageInput extends StatefulWidget {
@@ -27,6 +30,8 @@ class _MessageInputState extends State<MessageInput> {
   final _focusNode = FocusNode();
   var _enteredMessages = "";
   var focused = false;
+  bool _isRecording = false;
+  bool _isSendingVoice = false;
   Message? get _replyTarget => widget.replyTargetNotifier.value;
 
   Future<File?> _cropImage(File image) async {
@@ -85,6 +90,81 @@ class _MessageInputState extends State<MessageInput> {
     widget.replyTargetNotifier.value = null;
   }
 
+  Future<bool> _checkMicrophonePermission() async {
+    final recorder = AudioRecorder();
+    final hasPermission = await recorder.hasPermission();
+    await recorder.dispose();
+    return hasPermission;
+  }
+
+  void _startRecording() async {
+    final hasPermission = await _checkMicrophonePermission();
+    if (!hasPermission) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content:
+                Text('Microphone permission is required for voice messages'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+      return;
+    }
+
+    HapticFeedback.mediumImpact();
+    setState(() {
+      _isRecording = true;
+    });
+  }
+
+  void _onRecordingComplete(File audioFile, int durationMs) async {
+    setState(() {
+      _isRecording = false;
+      _isSendingVoice = true;
+    });
+
+    try {
+      await MessagesController().sendVoice(
+        audioFile: audioFile,
+        durationMs: durationMs,
+        topicId: widget.chatScreenArguments.topicId,
+        groupId: widget.chatScreenArguments.groupId,
+        chatType: widget.chatScreenArguments.chatType,
+        replyTo: _replyTarget,
+      );
+
+      widget.replyTargetNotifier.value = null;
+
+      await widget.messagesLogController.animateTo(
+        widget.messagesLogController.position.minScrollExtent,
+        duration: const Duration(milliseconds: 500),
+        curve: Curves.fastOutSlowIn,
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to send voice message: $e'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSendingVoice = false;
+        });
+      }
+    }
+  }
+
+  void _onRecordingCancel() {
+    setState(() {
+      _isRecording = false;
+    });
+  }
+
   @override
   void initState() {
     super.initState();
@@ -115,6 +195,58 @@ class _MessageInputState extends State<MessageInput> {
 
   @override
   Widget build(BuildContext context) {
+    // Show voice recorder when recording
+    if (_isRecording) {
+      return VoiceRecorder(
+        onRecordingComplete: _onRecordingComplete,
+        onCancel: _onRecordingCancel,
+      );
+    }
+
+    // Show loading state when sending voice
+    if (_isSendingVoice) {
+      return Container(
+        padding: EdgeInsets.only(
+          left: 16,
+          right: 16,
+          top: 12,
+          bottom: 12 + MediaQuery.of(context).padding.bottom,
+        ),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
+          border: Border(
+            top: BorderSide(
+              color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
+              width: 1,
+            ),
+          ),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Text(
+              'Sending voice message...',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onSurface
+                        .withOpacity(0.7),
+                  ),
+            ),
+          ],
+        ),
+      );
+    }
+
     return Container(
       padding: EdgeInsets.only(
         left: 16,
@@ -140,7 +272,9 @@ class _MessageInputState extends State<MessageInput> {
               mediaType: _replyTarget!.mediaType,
               snippet: _replyTarget!.mediaType == MediaType.text
                   ? _replyTarget!.data
-                  : '[image]',
+                  : _replyTarget!.mediaType == MediaType.image
+                      ? '[image]'
+                      : '[voice message]',
               onClose: () => widget.replyTargetNotifier.value = null,
             ),
           Row(
@@ -208,6 +342,16 @@ class _MessageInputState extends State<MessageInput> {
                           },
                           icon: Icon(
                             Icons.image_rounded,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                          style: IconButton.styleFrom(
+                            padding: const EdgeInsets.all(8),
+                          ),
+                        ),
+                        IconButton(
+                          onPressed: _startRecording,
+                          icon: Icon(
+                            Icons.mic_rounded,
                             color: Theme.of(context).colorScheme.primary,
                           ),
                           style: IconButton.styleFrom(
