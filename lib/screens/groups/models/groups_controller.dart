@@ -229,4 +229,80 @@ class GroupsController {
       "joined": Timestamp.now(),
     });
   }
+
+  /// Get all members of a group
+  Future<List<GroupMember>> getGroupMembers(String groupId) async {
+    final db = FirebaseFirestore.instance;
+
+    // Get all users who have this group in their groups subcollection
+    final usersSnapshot = await db.collection('users').get();
+
+    List<GroupMember> members = [];
+
+    for (var userDoc in usersSnapshot.docs) {
+      final groupDoc = await db
+          .collection('users')
+          .doc(userDoc.id)
+          .collection('groups')
+          .doc(groupId)
+          .get();
+
+      if (groupDoc.exists) {
+        final userData = userDoc.data();
+        final joinedAt = groupDoc.data()?['joined'] as Timestamp?;
+
+        // Get username from Firestore, fallback to email prefix or 'Member'
+        String memberName = userData['username'] ??
+            userData['displayName'] ??
+            userData['name'] ??
+            '';
+
+        // If no name found, try to extract from email
+        if (memberName.isEmpty && userData['email'] != null) {
+          memberName = (userData['email'] as String).split('@')[0];
+        }
+
+        // Final fallback
+        if (memberName.isEmpty) {
+          memberName = 'Member';
+        }
+
+        members.add(GroupMember(
+          id: userDoc.id,
+          name: memberName,
+          email: userData['email'] ?? '',
+          avatarUrl: userData['photoURL'] ?? userData['avatarUrl'],
+          joinedAt: joinedAt ?? Timestamp.now(),
+        ));
+      }
+    }
+
+    // Sort by join date (oldest first)
+    members.sort((a, b) => a.joinedAt.compareTo(b.joinedAt));
+
+    return members;
+  }
+
+  /// Stream of group members
+  Stream<List<GroupMember>> getGroupMembersStream(String groupId) async* {
+    final members = await getGroupMembers(groupId);
+    yield members;
+  }
+}
+
+/// Model class for group member
+class GroupMember {
+  final String id;
+  final String name;
+  final String email;
+  final String? avatarUrl;
+  final Timestamp joinedAt;
+
+  GroupMember({
+    required this.id,
+    required this.name,
+    required this.email,
+    this.avatarUrl,
+    required this.joinedAt,
+  });
 }

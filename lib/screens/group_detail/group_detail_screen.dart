@@ -35,7 +35,7 @@ class GroupDetailScreen extends StatelessWidget {
                 },
               ),
             ],
-            bottom: TabBar(
+            bottom: const TabBar(
               tabs: [
                 Tab(
                   icon: Icon(Icons.library_books_rounded),
