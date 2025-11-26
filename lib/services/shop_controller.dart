@@ -20,7 +20,7 @@ class ShopController {
         id: 'challenger',
         name: 'Challenger',
         description: 'Show your competitive spirit',
-        price: 10,
+        price: 100, // ~20 tasks to earn
         currencyType: ShopCurrencyType.coins,
         imagePath: 'assets/images/frame_challenger.png',
       ),
@@ -28,7 +28,7 @@ class ShopController {
         id: 'purple',
         name: 'Purple Dream',
         description: 'Elegant purple border',
-        price: 5,
+        price: 75, // ~15 tasks to earn
         currencyType: ShopCurrencyType.coins,
         imagePath: 'assets/images/frame_purple.png',
       ),
@@ -36,7 +36,7 @@ class ShopController {
         id: 'hanghieu',
         name: 'Premium Gold',
         description: 'Luxurious golden frame',
-        price: 15,
+        price: 200, // ~40 tasks to earn
         currencyType: ShopCurrencyType.coins,
         imagePath: 'assets/images/frame_hanghieu.png',
       ),
@@ -44,7 +44,7 @@ class ShopController {
         id: 'diamond',
         name: 'Diamond Elite',
         description: 'Ultimate prestige frame',
-        price: 50,
+        price: 500, // ~100 tasks to earn (prestigious!)
         currencyType: ShopCurrencyType.coins,
         imagePath: 'assets/images/frame_diamond.png',
       ),
@@ -58,7 +58,7 @@ class ShopController {
         id: 'space',
         name: 'Space Explorer',
         description: 'Journey through the cosmos',
-        price: 8,
+        price: 80, // ~16 tasks
         currencyType: ShopCurrencyType.coins,
         imagePath: 'assets/images/bg_space.png',
       ),
@@ -66,7 +66,7 @@ class ShopController {
         id: 'wjbu1',
         name: 'Wjbu Sunset',
         description: 'Beautiful sunset theme',
-        price: 10,
+        price: 120, // ~24 tasks
         currencyType: ShopCurrencyType.coins,
         imagePath: 'assets/images/bg_wjbu.png',
       ),
@@ -74,7 +74,7 @@ class ShopController {
         id: 'wjbu2',
         name: 'Wjbu Dawn',
         description: 'Fresh morning theme',
-        price: 10,
+        price: 120, // ~24 tasks
         currencyType: ShopCurrencyType.coins,
         imagePath: 'assets/images/bg_wjbu2.png',
       ),
@@ -82,7 +82,7 @@ class ShopController {
         id: 'forest',
         name: 'Forest Serenity',
         description: 'Peaceful nature background',
-        price: 12,
+        price: 150, // ~30 tasks
         currencyType: ShopCurrencyType.coins,
         imagePath: 'assets/images/bg_forest.png',
       ),
@@ -96,7 +96,7 @@ class ShopController {
         id: 'taskmaster',
         name: 'Task Master',
         description: 'Complete 50 tasks',
-        price: 20,
+        price: 250, // ~50 tasks (matches description)
         colorValue: 0xFF2196F3, // Blue
         currencyType: ShopCurrencyType.coins,
       ),
@@ -104,7 +104,7 @@ class ShopController {
         id: 'habitking',
         name: 'Habit King',
         description: 'Maintain a 30-day streak',
-        price: 25,
+        price: 300, // Requires commitment
         colorValue: 0xFF4CAF50, // Green
         currencyType: ShopCurrencyType.coins,
       ),
@@ -112,7 +112,7 @@ class ShopController {
         id: 'legendary',
         name: 'Legendary',
         description: 'Reach level 20',
-        price: 100,
+        price: 1000, // Ultimate achievement
         colorValue: 0xFFFF9800, // Orange
         currencyType: ShopCurrencyType.coins,
       ),

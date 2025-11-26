@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:check_bird/models/todo/todo.dart';
 import 'package:check_bird/models/todo/todo_list_controller.dart';
+import 'package:check_bird/widgets/reward_toast_overlay.dart';
 import 'package:check_bird/screens/about/about_screen.dart';
 import 'package:check_bird/screens/authentication/authenticate_screen.dart';
 import 'package:check_bird/screens/profile/profile_screen.dart';
@@ -108,40 +109,43 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     final localeController =
         Provider.of<LocaleController>(context, listen: true);
-    return MaterialApp(
-      title: 'CheckBird',
-      debugShowCheckedModeBanner: false,
-      theme: AppTheme.of(context, listen: true).getCurrentTheme(),
-      locale: localeController.locale,
-      supportedLocales: AppLocalizations.supportedLocales,
-      localizationsDelegates: const [
-        AppLocalizations.delegate,
-        GlobalMaterialLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
-      ],
-      home: const WelcomeScreen(),
-      routes: {
-        SplashScreen.routeName: (context) => const SplashScreen(),
-        BeautifulWelcomeScreen.routeName: (context) =>
-            const BeautifulWelcomeScreen(),
-        SettingScreen.routeName: (context) => const SettingScreen(),
-        CreateTodoScreen.routeName: (context) => const CreateTodoScreen(),
-        FlappyBirdScreen.routeName: (context) => const FlappyBirdScreen(),
-        GroupScreen.routeName: (context) => const GroupScreen(),
-        ShopScreen.routeName: (context) => const ShopScreen(),
-        TaskScreen.routeName: (context) => const TaskScreen(),
-        MainNavigatorScreen.routeName: (context) => const MainNavigatorScreen(),
-        HomeScreen.routeName: (context) => const HomeScreen(),
-        AuthenticateScreen.routeName: (context) => const AuthenticateScreen(),
-        WelcomeScreen.routeName: (context) => const WelcomeScreen(),
-        AboutScreen.routeName: (context) => const AboutScreen(),
-        ProfileScreen.routeName: (context) => const ProfileScreen(),
-      },
-      onUnknownRoute: (settings) {
-        return MaterialPageRoute(
-            builder: (context) => const NotImplementedScreen());
-      },
+    return RewardToastOverlay(
+      child: MaterialApp(
+        title: 'CheckBird',
+        debugShowCheckedModeBanner: false,
+        theme: AppTheme.of(context, listen: true).getCurrentTheme(),
+        locale: localeController.locale,
+        supportedLocales: AppLocalizations.supportedLocales,
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        home: const WelcomeScreen(),
+        routes: {
+          SplashScreen.routeName: (context) => const SplashScreen(),
+          BeautifulWelcomeScreen.routeName: (context) =>
+              const BeautifulWelcomeScreen(),
+          SettingScreen.routeName: (context) => const SettingScreen(),
+          CreateTodoScreen.routeName: (context) => const CreateTodoScreen(),
+          FlappyBirdScreen.routeName: (context) => const FlappyBirdScreen(),
+          GroupScreen.routeName: (context) => const GroupScreen(),
+          ShopScreen.routeName: (context) => const ShopScreen(),
+          TaskScreen.routeName: (context) => const TaskScreen(),
+          MainNavigatorScreen.routeName: (context) =>
+              const MainNavigatorScreen(),
+          HomeScreen.routeName: (context) => const HomeScreen(),
+          AuthenticateScreen.routeName: (context) => const AuthenticateScreen(),
+          WelcomeScreen.routeName: (context) => const WelcomeScreen(),
+          AboutScreen.routeName: (context) => const AboutScreen(),
+          ProfileScreen.routeName: (context) => const ProfileScreen(),
+        },
+        onUnknownRoute: (settings) {
+          return MaterialPageRoute(
+              builder: (context) => const NotImplementedScreen());
+        },
+      ),
     );
   }
 }

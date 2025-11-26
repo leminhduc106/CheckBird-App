@@ -46,6 +46,41 @@ class RewardsService {
     });
   }
 
+  /// Get total earnings for today (to enforce daily limits)
+  Future<Map<String, int>> _getDailyEarnings(String userId) async {
+    try {
+      final now = DateTime.now();
+      final todayStart = DateTime(now.year, now.month, now.day);
+      final todayTimestamp = Timestamp.fromDate(todayStart);
+
+      final completions =
+          await _completionRecordsRef.where('userId', isEqualTo: userId).get();
+
+      int totalCoins = 0;
+      int totalXp = 0;
+
+      for (var doc in completions.docs) {
+        final data = doc.data() as Map<String, dynamic>?;
+        if (data == null) continue;
+
+        final completedAt = data['completedAt'] as Timestamp?;
+        if (completedAt == null) continue;
+
+        // Only count today's earnings
+        if (completedAt.seconds >= todayTimestamp.seconds) {
+          totalCoins += (data['coinsEarned'] as num?)?.toInt() ?? 0;
+          totalXp += (data['xpEarned'] as num?)?.toInt() ?? 0;
+        }
+      }
+
+      debugPrint('📊 Daily earnings so far: $totalCoins coins, $totalXp XP');
+      return {'coins': totalCoins, 'xp': totalXp};
+    } catch (e) {
+      debugPrint('❌ Error getting daily earnings: $e');
+      return {'coins': 0, 'xp': 0};
+    }
+  }
+
   /// Check if user can earn rewards for this task completion
   /// Returns true only if this is a NEW completion (not farming)
   Future<bool> canEarnRewardsForTask({
@@ -54,46 +89,54 @@ class RewardsService {
     required TodoType taskType,
   }) async {
     try {
+      debugPrint(
+          '🔍 Checking eligibility: userId=$userId, taskId=$taskId, type=$taskType');
+
       // Don't award rewards if taskId is empty or invalid
       if (taskId.isEmpty) {
-        debugPrint('Cannot award rewards: taskId is empty');
+        debugPrint('❌ Cannot award rewards: taskId is empty');
         return false;
       }
 
       final now = DateTime.now();
       final today = DateTime(now.year, now.month, now.day);
 
-      // For habits: Check if completed today already
-      if (taskType == TodoType.habit) {
-        final todayStart = Timestamp.fromDate(today);
-        final todayEnd = Timestamp.fromDate(today.add(const Duration(days: 1)));
-
-        final existingCompletions = await _completionRecordsRef
-            .where('userId', isEqualTo: userId)
-            .where('taskId', isEqualTo: taskId)
-            .where('isHabit', isEqualTo: true)
-            .where('completedAt', isGreaterThanOrEqualTo: todayStart)
-            .where('completedAt', isLessThan: todayEnd)
-            .limit(1)
-            .get();
-
-        return existingCompletions.docs.isEmpty;
-      }
-
-      // For tasks: Check if this exact task was completed today
-      // This prevents uncomplete/recomplete farming
-      final todayStart = Timestamp.fromDate(today);
       final existingCompletions = await _completionRecordsRef
           .where('userId', isEqualTo: userId)
           .where('taskId', isEqualTo: taskId)
-          .where('isHabit', isEqualTo: false)
-          .where('completedAt', isGreaterThanOrEqualTo: todayStart)
-          .limit(1)
           .get();
 
-      return existingCompletions.docs.isEmpty;
+      // Filter completions to only today
+      final todayStart = Timestamp.fromDate(today);
+      final todayEnd = Timestamp.fromDate(today.add(const Duration(days: 1)));
+
+      final todayCompletions = existingCompletions.docs.where((doc) {
+        final data = doc.data() as Map<String, dynamic>?;
+        if (data == null) return false;
+
+        final completedAt = data['completedAt'] as Timestamp?;
+        if (completedAt == null) return false;
+
+        final isHabit = data['isHabit'] as bool? ?? false;
+        final isCorrectType =
+            taskType == TodoType.habit ? isHabit == true : isHabit == false;
+
+        final isToday = completedAt.seconds >= todayStart.seconds &&
+            completedAt.seconds < todayEnd.seconds;
+
+        return isToday && isCorrectType;
+      }).toList();
+
+      debugPrint('📊 Found ${todayCompletions.length} completions for TODAY');
+
+      final canEarn = todayCompletions.isEmpty;
+      debugPrint(canEarn
+          ? '✅ Can earn rewards (no completions today)'
+          : '❌ Cannot earn (already completed today)');
+      return canEarn;
     } catch (e) {
-      debugPrint('Error checking reward eligibility: $e');
+      debugPrint('❌ Error checking reward eligibility: $e');
+      debugPrint('Stack trace: ${StackTrace.current}');
       return false; // Safe default: don't award if uncertain
     }
   }
@@ -117,7 +160,18 @@ class RewardsService {
 
       if (!canEarn) {
         debugPrint(
-            'User $userId already earned rewards for task $taskId today');
+            '❌ RewardsService: User $userId already earned rewards for task $taskId today');
+        return null;
+      }
+
+      // Check daily earning limit (prevent task farming)
+      final dailyEarnings = await _getDailyEarnings(userId);
+      const int dailyCoinLimit = 50; // Max 50 coins per day (~10 tasks)
+      const int dailyXpLimit = 300; // Max 300 XP per day
+
+      if (dailyEarnings['coins']! >= dailyCoinLimit) {
+        debugPrint(
+            '⚠️ Daily coin limit reached ($dailyCoinLimit coins). No more rewards today.');
         return null;
       }
 
@@ -126,8 +180,8 @@ class RewardsService {
       int xpEarned = 0;
 
       if (taskType == TodoType.habit) {
-        coinsEarned = 2; // Habits earn more (they're daily)
-        xpEarned = 15;
+        coinsEarned = 3; // Habits earn coins daily
+        xpEarned = 20;
       } else {
         coinsEarned = 5; // Tasks earn more coins (one-time)
         xpEarned = 25;
@@ -137,6 +191,22 @@ class RewardsService {
       if (isGroupTask) {
         coinsEarned += 2;
         xpEarned += 10;
+      }
+
+      // Apply daily limits
+      final remainingCoins = dailyCoinLimit - dailyEarnings['coins']!;
+      final remainingXp = dailyXpLimit - dailyEarnings['xp']!;
+
+      if (coinsEarned > remainingCoins) {
+        coinsEarned = remainingCoins.clamp(0, coinsEarned);
+      }
+      if (xpEarned > remainingXp) {
+        xpEarned = remainingXp.clamp(0, xpEarned);
+      }
+
+      if (coinsEarned <= 0 && xpEarned <= 0) {
+        debugPrint('⚠️ No rewards to give (limits reached)');
+        return null;
       }
 
       // Use Firestore transaction for atomic updates
@@ -193,10 +263,13 @@ class RewardsService {
         );
       });
 
-      debugPrint('Awarded $coinsEarned coins and $xpEarned XP to user $userId');
+      debugPrint(
+          '💰 RewardsService: Successfully awarded $coinsEarned coins and $xpEarned XP to user $userId');
       return {'coins': coinsEarned, 'xp': xpEarned};
     } catch (e) {
-      debugPrint('Error awarding task completion rewards: $e');
+      debugPrint(
+          '❌ RewardsService: Error awarding task completion rewards: $e');
+      debugPrint('Stack trace: ${StackTrace.current}');
       return null;
     }
   }

@@ -3,6 +3,7 @@ import 'package:check_bird/models/todo/todo_type.dart';
 import 'package:check_bird/screens/create_task/create_todo_screen.dart';
 import 'package:check_bird/services/authentication.dart';
 import 'package:check_bird/services/rewards_service.dart';
+import 'package:check_bird/widgets/reward_toast_overlay.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -192,14 +193,21 @@ class TodoItem extends StatelessWidget {
                             shape: const CircleBorder(),
                             onChanged: (_) async {
                               final userId = Authentication.user?.uid;
-                              if (userId == null) return;
+                              if (userId == null) {
+                                debugPrint('❌ No user ID found');
+                                return;
+                              }
 
                               final wasCompleted = todo.isCompleted;
+                              debugPrint(
+                                  '📋 Task toggle: "${todo.todoName}" (ID: ${todo.id}, Type: ${todo.type}, WasCompleted: $wasCompleted)');
                               todo.toggleCompleted();
 
                               // Only award rewards when marking as complete (not when uncompleting)
                               if (!wasCompleted && todo.isCompleted) {
                                 if (todo.id == null || todo.id!.isEmpty) {
+                                  debugPrint(
+                                      '❌ Task ID is missing for: ${todo.todoName}');
                                   if (context.mounted) {
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       const SnackBar(
@@ -214,6 +222,8 @@ class TodoItem extends StatelessWidget {
                                   return;
                                 }
 
+                                debugPrint(
+                                    '🎁 Attempting to award rewards for task: ${todo.id}');
                                 final rewards = await RewardsService()
                                     .awardTaskCompletionRewards(
                                   userId: userId,
@@ -223,32 +233,53 @@ class TodoItem extends StatelessWidget {
                                   isGroupTask: isGroupTask,
                                 );
 
-                                if (rewards != null && context.mounted) {
+                                if (rewards != null) {
                                   final coins = rewards['coins'] ?? 0;
                                   final xp = rewards['xp'] ?? 0;
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text(
-                                        isGroupTask
-                                            ? 'Shared progress with group! +$coins coins, +$xp XP'
-                                            : '+$coins coins, +$xp XP for completing!',
-                                      ),
-                                      duration: const Duration(seconds: 2),
-                                      backgroundColor: Colors.green,
-                                    ),
+                                  debugPrint(
+                                      '✅ Rewards awarded! +$coins coins, +$xp XP');
+
+                                  // Show reward toast using global controller
+                                  RewardToastController().showReward(
+                                    coins: coins,
+                                    xp: xp,
+                                    isGroupTask: isGroupTask,
                                   );
-                                } else if (wasCompleted == false &&
-                                    context.mounted) {
+                                } else if (context.mounted) {
                                   // No rewards earned (already completed today)
+                                  debugPrint(
+                                      '⚠️ No rewards: Already completed today or error');
+
+                                  ScaffoldMessenger.of(context)
+                                      .clearSnackBars();
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     SnackBar(
-                                      content: Text(
-                                        todo.type == TodoType.habit
-                                            ? 'Habit already completed today!'
-                                            : 'Task already completed today!',
+                                      content: Row(
+                                        children: [
+                                          const Icon(Icons.info_outline,
+                                              color: Colors.white),
+                                          const SizedBox(width: 12),
+                                          Expanded(
+                                            child: Text(
+                                              todo.type == TodoType.habit
+                                                  ? 'Habit already completed today!'
+                                                  : 'Task already completed today!',
+                                              style: const TextStyle(
+                                                fontSize: 16,
+                                                fontWeight: FontWeight.w500,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
                                       ),
-                                      duration: const Duration(seconds: 2),
-                                      backgroundColor: Colors.orange,
+                                      duration: const Duration(seconds: 3),
+                                      backgroundColor: Colors.orange.shade700,
+                                      behavior: SnackBarBehavior.floating,
+                                      margin: const EdgeInsets.all(16),
+                                      elevation: 6,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
                                     ),
                                   );
                                 }
