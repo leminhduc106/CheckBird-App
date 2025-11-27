@@ -32,6 +32,44 @@ class TodoListController {
     }
   }
 
+  /// Reschedule all pending notifications on app startup
+  /// This is important for notifications to work after device reboot
+  Future<void> rescheduleAllNotifications() async {
+    final now = DateTime.now();
+    final todos = getTodoList().values.toList();
+    int scheduledCount = 0;
+
+    for (final todo in todos) {
+      if (todo.type == TodoType.task &&
+          todo.notification != null &&
+          todo.notificationId != null) {
+        // Only reschedule if notification time is in the future
+        if (todo.notification!.isAfter(now)) {
+          final title = todo.todoName;
+          final body =
+              "Deadline: ${DateFormat('yyyy-MM-dd kk:mm').format(todo.deadline!)}";
+
+          await NotificationService().createScheduleNotification(
+            todo.notificationId!,
+            title,
+            body,
+            todo.notification!,
+            payload: todo.id,
+          );
+          scheduledCount++;
+        } else {
+          // Clear past notification info
+          todo.notification = null;
+          todo.notificationId = null;
+          await todo.save();
+        }
+      }
+    }
+
+    debugPrint(
+        'TodoListController: Rescheduled $scheduledCount notifications on startup');
+  }
+
   Future<void> syncTodoList() async {
     // TODO: sync all todo to firebase using their own `sync` function
   }
@@ -56,16 +94,42 @@ class TodoListController {
 
     await todoList.add(todo);
 
+    debugPrint('TodoListController: Adding todo "${todo.todoName}"');
+    debugPrint('  - Type: ${todo.type}');
+    debugPrint('  - Deadline: ${todo.deadline}');
+    debugPrint('  - Notification: ${todo.notification}');
+
     if (todo.type == TodoType.task && todo.notification != null) {
       todo.notificationId =
           DateTime.now().millisecondsSinceEpoch.remainder(100000);
 
-      String title = todo.todoName;
-      String body =
-          "Deadline: ${DateFormat('yyyy-MM-dd kk:mm').format(todo.deadline!)}";
+      String title = '📋 ${todo.todoName}';
+      String body = todo.deadline != null
+          ? "Deadline: ${DateFormat('yyyy-MM-dd HH:mm').format(todo.deadline!)}"
+          : "Task reminder";
+
+      debugPrint('  - Scheduling notification id: ${todo.notificationId}');
+      debugPrint('  - Notification time: ${todo.notification}');
 
       await NotificationService().createScheduleNotification(
-          todo.notificationId!, title, body, todo.notification!);
+        todo.notificationId!,
+        title,
+        body,
+        todo.notification!,
+        payload: todo.id,
+      );
+
+      // Save the todo with updated notificationId
+      await todo.save();
+
+      debugPrint(
+          'TodoListController: Successfully scheduled notification for task "${todo.todoName}"');
+
+      // Debug: Print all pending notifications
+      await NotificationService().debugPendingNotifications();
+    } else {
+      debugPrint(
+          '  - No notification scheduled (notification: ${todo.notification})');
     }
   }
 

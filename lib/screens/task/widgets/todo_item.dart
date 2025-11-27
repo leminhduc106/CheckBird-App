@@ -12,6 +12,32 @@ class TodoItem extends StatelessWidget {
   final Todo todo;
   final bool isCheck;
 
+  /// Check if notification is still pending (in the future)
+  bool _isNotificationPending(DateTime notificationTime) {
+    return notificationTime.isAfter(DateTime.now());
+  }
+
+  /// Format reminder time for display
+  String _formatReminderTime(DateTime notificationTime) {
+    final now = DateTime.now();
+    final isToday = notificationTime.day == now.day &&
+        notificationTime.month == now.month &&
+        notificationTime.year == now.year;
+
+    if (isToday) {
+      return DateFormat.Hm().format(notificationTime);
+    }
+
+    final isTomorrow = notificationTime.difference(now).inDays == 0 &&
+        notificationTime.day == now.day + 1;
+
+    if (isTomorrow) {
+      return 'Tomorrow ${DateFormat.Hm().format(notificationTime)}';
+    }
+
+    return DateFormat('dd/MM HH:mm').format(notificationTime);
+  }
+
   String get habitDays {
     final days = todo.weekdays;
     String result = '';
@@ -142,6 +168,47 @@ class TodoItem extends StatelessWidget {
                                   color: Theme.of(context)
                                       .colorScheme
                                       .onSecondaryContainer,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      // Reminder indicator (only for tasks with notifications)
+                      if (todo.type == TodoType.task &&
+                          todo.notification != null)
+                        Container(
+                          margin: const EdgeInsets.only(right: 8),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: _isNotificationPending(todo.notification!)
+                                ? Colors.amber.shade100
+                                : Colors.grey.shade200,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                _isNotificationPending(todo.notification!)
+                                    ? Icons.notifications_active_rounded
+                                    : Icons.notifications_off_rounded,
+                                size: 14,
+                                color:
+                                    _isNotificationPending(todo.notification!)
+                                        ? Colors.amber.shade800
+                                        : Colors.grey.shade600,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                _formatReminderTime(todo.notification!),
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w500,
+                                  color:
+                                      _isNotificationPending(todo.notification!)
+                                          ? Colors.amber.shade800
+                                          : Colors.grey.shade600,
                                 ),
                               ),
                             ],

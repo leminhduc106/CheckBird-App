@@ -194,7 +194,7 @@ class _VoiceRecorderState extends State<VoiceRecorder>
                 ),
                 child: Icon(
                   Icons.delete_rounded,
-                  color: isCancelZone ? Colors.white : Colors.grey.shade600,
+                  color: isCancelZone ? Colors.white : Colors.red,
                   size: 20,
                 ),
               ),

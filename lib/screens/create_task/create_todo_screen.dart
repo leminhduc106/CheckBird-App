@@ -28,7 +28,7 @@ class _CreateTodoScreenState extends State<CreateTodoScreen> {
   TodoType _todoType = TodoType.task;
   var _backgroundColor = Colors.white;
   var _textColor = Colors.black;
-  DateTime? _dueDate;
+  late DateTime _dueDate; // Default due date (30 minutes from now)
   DateTime? _notification;
   List<bool> _habitLoop = List.filled(7, true);
   var _habitError = false; //
@@ -40,13 +40,17 @@ class _CreateTodoScreenState extends State<CreateTodoScreen> {
   @override
   void initState() {
     super.initState();
+    // Set default due date to 30 minutes from now
+    _dueDate = DateTime.now().add(const Duration(minutes: 30));
+
     if (widget.todo != null) {
       _todoName = widget.todo!.todoName;
       _todoDescription = widget.todo!.todoDescription;
       _backgroundColor = Color(widget.todo!.backgroundColor);
       _textColor = Color(widget.todo!.textColor);
       _todoType = widget.todo!.type;
-      _dueDate = widget.todo!.deadline;
+      _dueDate = widget.todo!.deadline ?? _dueDate;
+      _notification = widget.todo!.notification;
       _habitLoop = (widget.todo!.type == TodoType.habit)
           ? widget.todo!.weekdays!
           : _habitLoop;
@@ -71,7 +75,7 @@ class _CreateTodoScreenState extends State<CreateTodoScreen> {
     }
   }
 
-  void _submit() {
+  Future<void> _submit() async {
     FocusScope.of(context).unfocus();
     var isValid = _formKey.currentState!.validate();
     if (!isValid) return;
@@ -111,7 +115,7 @@ class _CreateTodoScreenState extends State<CreateTodoScreen> {
       );
     } else {
       if (_todoType == TodoType.habit) {
-        TodoListController().addTodo(
+        await TodoListController().addTodo(
           Todo.habit(
             todoName: _todoName,
             todoDescription: _todoDescription,
@@ -123,7 +127,11 @@ class _CreateTodoScreenState extends State<CreateTodoScreen> {
         );
       }
       if (_todoType == TodoType.task) {
-        TodoListController().addTodo(
+        debugPrint('CreateTodoScreen: Creating task with:');
+        debugPrint('  - Name: $_todoName');
+        debugPrint('  - Due date: $_dueDate');
+        debugPrint('  - Notification: $_notification');
+        await TodoListController().addTodo(
           Todo.task(
               todoName: _todoName,
               todoDescription: _todoDescription,
@@ -212,6 +220,8 @@ class _CreateTodoScreenState extends State<CreateTodoScreen> {
                         });
                       },
                       onChangedNotification: (value) {
+                        debugPrint(
+                            'CreateTodoScreen: onChangedNotification called with: $value');
                         _notification = value;
                       },
                     ),

@@ -4,6 +4,7 @@ import 'package:check_bird/models/todo/todo_list_controller.dart';
 import 'package:check_bird/widgets/reward_toast_overlay.dart';
 import 'package:check_bird/screens/about/about_screen.dart';
 import 'package:check_bird/screens/authentication/authenticate_screen.dart';
+
 import 'package:check_bird/screens/profile/profile_screen.dart';
 import 'package:check_bird/screens/create_task/create_todo_screen.dart';
 import 'package:check_bird/screens/flappy_bird/flappy_bird_screen.dart';
@@ -63,6 +64,9 @@ class AppInitializer extends StatelessWidget {
 
     // Notifications
     await NotificationService().initialize();
+
+    // Reschedule all notifications (important for after device reboot)
+    await TodoListController().rescheduleAllNotifications();
 
     // Settings
     await Settings.init(cacheProvider: SharePreferenceCache());

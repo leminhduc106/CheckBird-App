@@ -160,7 +160,12 @@ class Todo extends HiveObject {
             "Deadline: ${DateFormat('yyyy-MM-dd kk:mm').format(deadline!)}";
 
         await NotificationService().createScheduleNotification(
-            notificationId!, title, body, newNotification);
+          notificationId!,
+          title,
+          body,
+          newNotification,
+          payload: id,
+        );
       }
     }
     save();
