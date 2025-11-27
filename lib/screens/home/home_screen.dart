@@ -65,11 +65,22 @@ class _HomeScreenState extends State<HomeScreen> {
               if (Authentication.user != null) ...[
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Text(
-                    "Groups",
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
+                  child: Row(
+                    children: [
+                      Text(
+                        "Groups",
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                              fontWeight: FontWeight.w600,
+                            ),
+                      ),
+                      const Spacer(),
+                      TextButton(
+                        onPressed: () {
+                          widget.changeTab?.call(2);
+                        },
+                        child: const Text("See All"),
+                      ),
+                    ],
                   ),
                 ),
                 const SizedBox(height: 8),
