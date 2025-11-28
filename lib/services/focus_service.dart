@@ -30,7 +30,7 @@ class FocusService extends ChangeNotifier {
   FocusSettings get settings => _settings;
   FocusStats get todayStats => _todayStats;
   Duration get remainingTime => _remainingTime;
-  bool get isRunning => _currentSession?.isRunning ?? false;
+  bool get isRunning => _timer != null && _currentSession != null;
   int get completedSessionsToday => _completedSessionsToday;
 
   /// Initialize service

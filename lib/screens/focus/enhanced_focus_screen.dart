@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:check_bird/models/focus/focus_session.dart';
@@ -79,7 +80,7 @@ class _EnhancedFocusScreenState extends State<EnhancedFocusScreen>
     final colorScheme = theme.colorScheme;
 
     return Scaffold(
-      backgroundColor: _getBackgroundColor(colorScheme),
+      backgroundColor: colorScheme.surface,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -91,13 +92,13 @@ class _EnhancedFocusScreenState extends State<EnhancedFocusScreen>
           ),
         ),
         leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: colorScheme.onSurface),
+          icon: Icon(Icons.arrow_back_rounded, color: colorScheme.onSurface),
           onPressed: () => Navigator.pop(context),
         ),
         actions: [
           IconButton(
             icon: Icon(
-              _showSettings ? Icons.close : Icons.settings,
+              _showSettings ? Icons.close_rounded : Icons.tune_rounded,
               color: colorScheme.onSurface,
             ),
             onPressed: () {
@@ -105,7 +106,7 @@ class _EnhancedFocusScreenState extends State<EnhancedFocusScreen>
             },
           ),
           IconButton(
-            icon: Icon(Icons.history, color: colorScheme.onSurface),
+            icon: Icon(Icons.history_rounded, color: colorScheme.onSurface),
             onPressed: _showHistory,
           ),
         ],
@@ -115,20 +116,6 @@ class _EnhancedFocusScreenState extends State<EnhancedFocusScreen>
         child: _showSettings ? _buildSettings() : _buildMainContent(),
       ),
     );
-  }
-
-  Color _getBackgroundColor(ColorScheme colorScheme) {
-    final session = _focusService.currentSession;
-    if (session == null) return colorScheme.surface;
-
-    switch (session.type) {
-      case SessionType.focus:
-        return colorScheme.primaryContainer.withOpacity(0.3);
-      case SessionType.shortBreak:
-        return Colors.green.withOpacity(0.1);
-      case SessionType.longBreak:
-        return Colors.blue.withOpacity(0.1);
-    }
   }
 
   String _getAppBarTitle() {
@@ -209,34 +196,53 @@ class _EnhancedFocusScreenState extends State<EnhancedFocusScreen>
     final stats = _focusService.todayStats;
     final colorScheme = Theme.of(context).colorScheme;
 
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-      children: [
-        _buildStatItem(
-          icon: Icons.timer,
-          value: '${stats.totalFocusMinutes}',
-          label: 'Minutes',
-          color: colorScheme.primary,
-        ),
-        _buildStatItem(
-          icon: Icons.emoji_events,
-          value: '${stats.pomodorosCompleted}',
-          label: 'Sessions',
-          color: Colors.orange,
-        ),
-        _buildStatItem(
-          icon: Icons.star,
-          value: '${stats.totalXpEarned}',
-          label: 'XP',
-          color: Colors.purple,
-        ),
-        _buildStatItem(
-          icon: Icons.monetization_on,
-          value: '${stats.totalCoinsEarned}',
-          label: 'Coins',
-          color: Colors.amber,
-        ),
-      ],
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 8),
+      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerHighest.withOpacity(0.5),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: [
+          _buildStatItem(
+            icon: Icons.timer_outlined,
+            value: '${stats.totalFocusMinutes}',
+            label: 'Minutes',
+            color: colorScheme.primary,
+          ),
+          _buildStatDivider(),
+          _buildStatItem(
+            icon: Icons.emoji_events_outlined,
+            value: '${stats.pomodorosCompleted}',
+            label: 'Sessions',
+            color: Colors.orange,
+          ),
+          _buildStatDivider(),
+          _buildStatItem(
+            icon: Icons.star_outline_rounded,
+            value: '${stats.totalXpEarned}',
+            label: 'XP',
+            color: Colors.purple,
+          ),
+          _buildStatDivider(),
+          _buildStatItem(
+            icon: Icons.monetization_on_outlined,
+            value: '${stats.totalCoinsEarned}',
+            label: 'Coins',
+            color: Colors.amber.shade700,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatDivider() {
+    return Container(
+      height: 40,
+      width: 1,
+      color: Theme.of(context).colorScheme.outlineVariant.withOpacity(0.5),
     );
   }
 
@@ -247,16 +253,10 @@ class _EnhancedFocusScreenState extends State<EnhancedFocusScreen>
     required Color color,
   }) {
     return Column(
+      mainAxisSize: MainAxisSize.min,
       children: [
-        Container(
-          padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(
-            color: color.withOpacity(0.1),
-            shape: BoxShape.circle,
-          ),
-          child: Icon(icon, color: color, size: 20),
-        ),
-        const SizedBox(height: 6),
+        Icon(icon, color: color, size: 22),
+        const SizedBox(height: 4),
         Text(
           value,
           style: TextStyle(
@@ -268,7 +268,7 @@ class _EnhancedFocusScreenState extends State<EnhancedFocusScreen>
         Text(
           label,
           style: TextStyle(
-            fontSize: 12,
+            fontSize: 11,
             color: Theme.of(context).colorScheme.onSurfaceVariant,
           ),
         ),
@@ -280,6 +280,8 @@ class _EnhancedFocusScreenState extends State<EnhancedFocusScreen>
     final remaining = _focusService.remainingTime;
     final session = _focusService.currentSession;
     final isActive = session != null;
+    final isRunning = _focusService.isRunning;
+    final colorScheme = Theme.of(context).colorScheme;
 
     final minutes = remaining.inMinutes.toString().padLeft(2, '0');
     final seconds = (remaining.inSeconds % 60).toString().padLeft(2, '0');
@@ -288,71 +290,123 @@ class _EnhancedFocusScreenState extends State<EnhancedFocusScreen>
         ? 1 - (remaining.inSeconds / (session.plannedMinutes * 60))
         : 0.0;
 
-    return Stack(
-      alignment: Alignment.center,
-      children: [
-        // Outer glow animation
-        if (isActive)
-          AnimatedBuilder(
-            animation: _pulseController,
-            builder: (context, child) {
-              return Container(
-                width: 280 + (10 * _pulseController.value),
-                height: 280 + (10 * _pulseController.value),
+    final sessionColor =
+        isActive ? _getSessionColor(session.type) : colorScheme.primary;
+
+    return AnimatedBuilder(
+      animation: _pulseController,
+      builder: (context, child) {
+        final breatheScale =
+            isRunning ? 1.0 + (0.015 * _pulseController.value) : 1.0;
+
+        return Transform.scale(
+          scale: breatheScale,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              // Outer decorative ring with gradient
+              Container(
+                width: 290,
+                height: 290,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
+                  gradient: RadialGradient(
+                    colors: [
+                      sessionColor.withOpacity(0.08),
+                      sessionColor.withOpacity(0.02),
+                      Colors.transparent,
+                    ],
+                    stops: const [0.7, 0.9, 1.0],
+                  ),
+                ),
+              ),
+
+              // Background circle
+              Container(
+                width: 260,
+                height: 260,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: colorScheme.surfaceContainerHighest,
                   boxShadow: [
                     BoxShadow(
-                      color: _getSessionColor(session.type)
-                          .withOpacity(0.3 * _pulseController.value),
-                      blurRadius: 40,
-                      spreadRadius: 5,
+                      color: colorScheme.shadow.withOpacity(0.08),
+                      blurRadius: 20,
+                      spreadRadius: 2,
                     ),
                   ],
                 ),
-              );
-            },
-          ),
-
-        // Progress ring
-        SizedBox(
-          width: 260,
-          height: 260,
-          child: CustomPaint(
-            painter: ProgressRingPainter(
-              progress: progress,
-              color: isActive ? _getSessionColor(session.type) : Colors.grey,
-              backgroundColor:
-                  Theme.of(context).colorScheme.surfaceContainerHighest,
-            ),
-          ),
-        ),
-
-        // Timer text
-        Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              '$minutes:$seconds',
-              style: TextStyle(
-                fontSize: 64,
-                fontWeight: FontWeight.w200,
-                fontFamily: 'monospace',
-                color: Theme.of(context).colorScheme.onSurface,
               ),
-            ),
-            if (isActive)
-              Text(
-                _getSessionTypeLabel(session.type),
-                style: TextStyle(
-                  fontSize: 16,
-                  color: _getSessionColor(session.type),
-                  fontWeight: FontWeight.w500,
+
+              // Progress ring
+              SizedBox(
+                width: 260,
+                height: 260,
+                child: CustomPaint(
+                  painter: ProgressRingPainter(
+                    progress: progress,
+                    color: sessionColor,
+                    backgroundColor: colorScheme.surfaceContainerHigh,
+                  ),
                 ),
               ),
-          ],
-        ),
-      ],
+
+              // Inner white circle
+              Container(
+                width: 220,
+                height: 220,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: colorScheme.surface,
+                  boxShadow: [
+                    BoxShadow(
+                      color: colorScheme.shadow.withOpacity(0.05),
+                      blurRadius: 15,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    // Timer text
+                    Text(
+                      '$minutes:$seconds',
+                      style: TextStyle(
+                        fontSize: 52,
+                        fontWeight: FontWeight.w300,
+                        letterSpacing: 2,
+                        color: colorScheme.onSurface,
+                        fontFeatures: const [FontFeature.tabularFigures()],
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    // Session type label
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: sessionColor.withOpacity(0.12),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        isActive
+                            ? _getSessionTypeLabel(session.type)
+                            : 'Ready to Focus',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: sessionColor,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -370,97 +424,123 @@ class _EnhancedFocusScreenState extends State<EnhancedFocusScreen>
   String _getSessionTypeLabel(SessionType type) {
     switch (type) {
       case SessionType.focus:
-        return 'Deep Focus';
+        return '🧠 Deep Focus';
       case SessionType.shortBreak:
-        return 'Quick Rest';
+        return '☕ Quick Rest';
       case SessionType.longBreak:
-        return 'Recharge Time';
+        return '🌴 Recharge';
     }
   }
 
   Widget _buildAmbienceSelector() {
-    return SizedBox(
-      height: 70,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        itemCount: _ambienceSounds.length,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        itemBuilder: (context, index) {
-          final sound = _ambienceSounds[index];
-          final isSelected = _selectedAmbience == sound['name'];
+    final colorScheme = Theme.of(context).colorScheme;
 
-          return Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 6),
-            child: GestureDetector(
-              onTap: () {
-                HapticFeedback.lightImpact();
-                setState(() {
-                  _selectedAmbience = isSelected ? null : sound['name'];
-                });
-                // TODO: Play/stop ambient sound
-              },
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  AnimatedContainer(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8),
+          child: Row(
+            children: [
+              Icon(Icons.music_note_rounded,
+                  size: 18, color: colorScheme.onSurfaceVariant),
+              const SizedBox(width: 6),
+              Text(
+                'Ambient Sounds',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+        SizedBox(
+          height: 80,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            itemCount: _ambienceSounds.length,
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            itemBuilder: (context, index) {
+              final sound = _ambienceSounds[index];
+              final isSelected = _selectedAmbience == sound['name'];
+              final color = sound['color'] as Color;
+
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 6),
+                child: GestureDetector(
+                  onTap: () {
+                    HapticFeedback.lightImpact();
+                    setState(() {
+                      _selectedAmbience = isSelected ? null : sound['name'];
+                    });
+                  },
+                  child: AnimatedContainer(
                     duration: const Duration(milliseconds: 200),
-                    padding: const EdgeInsets.all(12),
+                    width: 64,
                     decoration: BoxDecoration(
                       color: isSelected
-                          ? (sound['color'] as Color).withOpacity(0.2)
-                          : Theme.of(context)
-                              .colorScheme
-                              .surfaceContainerHighest,
-                      shape: BoxShape.circle,
-                      border: isSelected
-                          ? Border.all(color: sound['color'], width: 2)
-                          : null,
+                          ? color.withOpacity(0.12)
+                          : colorScheme.surfaceContainerHighest,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: isSelected ? color : Colors.transparent,
+                        width: 2,
+                      ),
                     ),
-                    child: Icon(
-                      sound['icon'],
-                      color: isSelected ? sound['color'] : Colors.grey,
-                      size: 22,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          sound['icon'],
+                          color:
+                              isSelected ? color : colorScheme.onSurfaceVariant,
+                          size: 24,
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          sound['name'],
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight:
+                                isSelected ? FontWeight.w600 : FontWeight.w500,
+                            color: isSelected
+                                ? color
+                                : colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    sound['name'],
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: isSelected ? sound['color'] : Colors.grey,
-                      fontWeight:
-                          isSelected ? FontWeight.w500 : FontWeight.normal,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          );
-        },
-      ),
+                ),
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 
   Widget _buildControlButtons() {
     final isRunning = _focusService.isRunning;
     final hasActiveSession = _focusService.currentSession != null;
+    final colorScheme = Theme.of(context).colorScheme;
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         if (hasActiveSession) ...[
           // Cancel button
-          IconButton(
-            onPressed: () => _showCancelDialog(),
-            icon: const Icon(Icons.stop),
-            iconSize: 32,
-            style: IconButton.styleFrom(
-              backgroundColor: Colors.red.withOpacity(0.1),
-              foregroundColor: Colors.red,
-              padding: const EdgeInsets.all(16),
-            ),
+          _buildControlButton(
+            icon: Icons.stop_rounded,
+            color: Colors.red.shade400,
+            backgroundColor: Colors.red.withOpacity(0.1),
+            onTap: _showCancelDialog,
+            size: 56,
           ),
-          const SizedBox(width: 20),
+          const SizedBox(width: 24),
         ],
 
         // Main play/pause button
@@ -483,14 +563,14 @@ class _EnhancedFocusScreenState extends State<EnhancedFocusScreen>
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [
-                  Theme.of(context).colorScheme.primary,
-                  Theme.of(context).colorScheme.secondary,
+                  colorScheme.primary,
+                  colorScheme.primary.withBlue(255),
                 ],
               ),
               shape: BoxShape.circle,
               boxShadow: [
                 BoxShadow(
-                  color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+                  color: colorScheme.primary.withOpacity(0.35),
                   blurRadius: 20,
                   offset: const Offset(0, 8),
                 ),
@@ -498,62 +578,113 @@ class _EnhancedFocusScreenState extends State<EnhancedFocusScreen>
             ),
             child: Icon(
               !hasActiveSession
-                  ? Icons.play_arrow
-                  : (isRunning ? Icons.pause : Icons.play_arrow),
-              size: 40,
-              color: Colors.white,
+                  ? Icons.play_arrow_rounded
+                  : (isRunning
+                      ? Icons.pause_rounded
+                      : Icons.play_arrow_rounded),
+              size: 42,
+              color: colorScheme.onPrimary,
             ),
           ),
         ),
 
         if (hasActiveSession) ...[
-          const SizedBox(width: 20),
+          const SizedBox(width: 24),
           // Add time button
-          IconButton(
-            onPressed: () {
+          _buildControlButton(
+            icon: Icons.add_rounded,
+            color: colorScheme.primary,
+            backgroundColor: colorScheme.primaryContainer,
+            onTap: () {
               HapticFeedback.lightImpact();
               _focusService.addExtraTime(5);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: const Text('+5 minutes added'),
+                  behavior: SnackBarBehavior.floating,
+                  duration: const Duration(seconds: 1),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10)),
+                ),
+              );
             },
-            icon: const Icon(Icons.add),
-            iconSize: 32,
-            style: IconButton.styleFrom(
-              backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-              foregroundColor: Theme.of(context).colorScheme.primary,
-              padding: const EdgeInsets.all(16),
-            ),
+            size: 56,
           ),
         ],
       ],
     );
   }
 
+  Widget _buildControlButton({
+    required IconData icon,
+    required Color color,
+    required Color backgroundColor,
+    required VoidCallback onTap,
+    required double size,
+  }) {
+    return GestureDetector(
+      onTap: () {
+        HapticFeedback.lightImpact();
+        onTap();
+      },
+      child: Container(
+        width: size,
+        height: size,
+        decoration: BoxDecoration(
+          color: backgroundColor,
+          shape: BoxShape.circle,
+        ),
+        child: Icon(icon, color: color, size: size * 0.5),
+      ),
+    );
+  }
+
   void _showSessionTypeDialog() {
+    final colorScheme = Theme.of(context).colorScheme;
+
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
+      isScrollControlled: true,
       builder: (context) {
         return Container(
           padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surface,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+            color: colorScheme.surface,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text(
-                'Start Session',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: colorScheme.outlineVariant,
+                  borderRadius: BorderRadius.circular(2),
                 ),
               ),
               const SizedBox(height: 20),
+              Text(
+                '🎯 Start a Session',
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  color: colorScheme.onSurface,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Choose your focus mode',
+                style: TextStyle(color: colorScheme.onSurfaceVariant),
+              ),
+              const SizedBox(height: 24),
               _buildSessionTypeOption(
-                title: 'Focus',
-                subtitle: '${_focusService.settings.focusDuration} minutes',
-                icon: Icons.psychology,
-                color: Theme.of(context).colorScheme.primary,
+                title: 'Focus Session',
+                subtitle:
+                    '${_focusService.settings.focusDuration} minutes of deep work',
+                icon: Icons.psychology_rounded,
+                color: colorScheme.primary,
                 onTap: () {
                   Navigator.pop(context);
                   _focusService.startFocusSession(
@@ -566,9 +697,9 @@ class _EnhancedFocusScreenState extends State<EnhancedFocusScreen>
               _buildSessionTypeOption(
                 title: 'Short Break',
                 subtitle:
-                    '${_focusService.settings.shortBreakDuration} minutes',
-                icon: Icons.coffee,
-                color: Colors.green,
+                    '${_focusService.settings.shortBreakDuration} minutes to refresh',
+                icon: Icons.coffee_rounded,
+                color: const Color(0xFF4CAF50),
                 onTap: () {
                   Navigator.pop(context);
                   _focusService.startShortBreak();
@@ -577,9 +708,10 @@ class _EnhancedFocusScreenState extends State<EnhancedFocusScreen>
               const SizedBox(height: 12),
               _buildSessionTypeOption(
                 title: 'Long Break',
-                subtitle: '${_focusService.settings.longBreakDuration} minutes',
-                icon: Icons.self_improvement,
-                color: Colors.blue,
+                subtitle:
+                    '${_focusService.settings.longBreakDuration} minutes to recharge',
+                icon: Icons.self_improvement_rounded,
+                color: const Color(0xFF2196F3),
                 onTap: () {
                   Navigator.pop(context);
                   _focusService.startLongBreak();
@@ -600,22 +732,61 @@ class _EnhancedFocusScreenState extends State<EnhancedFocusScreen>
     required Color color,
     required VoidCallback onTap,
   }) {
-    return ListTile(
-      onTap: onTap,
-      leading: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: color.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(12),
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: colorScheme.surfaceContainerHighest,
+            borderRadius: BorderRadius.circular(16),
+            border:
+                Border.all(color: colorScheme.outlineVariant.withOpacity(0.5)),
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(icon, color: color, size: 28),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: colorScheme.onSurface,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(Icons.arrow_forward_ios_rounded,
+                  size: 18, color: colorScheme.onSurfaceVariant),
+            ],
+          ),
         ),
-        child: Icon(icon, color: color),
       ),
-      title: Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
-      subtitle: Text(subtitle),
-      trailing: Icon(Icons.arrow_forward_ios,
-          size: 16, color: Theme.of(context).colorScheme.onSurfaceVariant),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      tileColor: Theme.of(context).colorScheme.surfaceContainerHighest,
     );
   }
 
