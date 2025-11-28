@@ -1,6 +1,16 @@
 import 'package:check_bird/screens/about/about_screen.dart';
+import 'package:check_bird/screens/achievements/achievements_screen.dart';
+import 'package:check_bird/screens/focus/enhanced_focus_screen.dart';
+import 'package:check_bird/screens/habits/habit_stack_screen.dart';
+import 'package:check_bird/screens/mood/mood_tracker_screen.dart';
+import 'package:check_bird/screens/pet/virtual_pet_screen.dart';
+import 'package:check_bird/screens/planning/daily_planning_screen.dart';
 import 'package:check_bird/screens/profile/profile_screen.dart';
+import 'package:check_bird/screens/quests/weekly_quests_screen.dart';
 import 'package:check_bird/screens/setting/setting_screen.dart';
+import 'package:check_bird/screens/smart_filters/smart_filters_screen.dart';
+import 'package:check_bird/screens/statistics/statistics_screen.dart';
+import 'package:check_bird/screens/templates/templates_screen.dart';
 import 'package:check_bird/services/authentication.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
@@ -111,6 +121,154 @@ class AppDrawer extends StatelessWidget {
             child: ListView(
               padding: const EdgeInsets.symmetric(vertical: 8),
               children: [
+                // Productivity & Insights Section
+                _buildSectionHeader(context, 'Productivity'),
+                _buildDrawerItem(
+                  context: context,
+                  icon: Icons.wb_sunny_rounded,
+                  title: 'Daily Planning',
+                  onTap: () {
+                    Navigator.of(context).pop();
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => const DailyPlanningScreen(),
+                      ),
+                    );
+                  },
+                ),
+                _buildDrawerItem(
+                  context: context,
+                  icon: Icons.psychology_rounded,
+                  title: 'Focus Timer',
+                  onTap: () {
+                    Navigator.of(context).pop();
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => const EnhancedFocusScreen(),
+                      ),
+                    );
+                  },
+                ),
+                _buildDrawerItem(
+                  context: context,
+                  icon: Icons.link_rounded,
+                  title: 'Habit Stacks',
+                  onTap: () {
+                    Navigator.of(context).pop();
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => const HabitStackScreen(),
+                      ),
+                    );
+                  },
+                ),
+                _buildDrawerItem(
+                  context: context,
+                  icon: Icons.bar_chart_rounded,
+                  title: 'Statistics',
+                  onTap: () {
+                    Navigator.of(context).pop();
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => const StatisticsScreen(),
+                      ),
+                    );
+                  },
+                ),
+                _buildDrawerItem(
+                  context: context,
+                  icon: Icons.filter_list_rounded,
+                  title: 'Smart Views',
+                  onTap: () {
+                    Navigator.of(context).pop();
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => const SmartFiltersScreen(),
+                      ),
+                    );
+                  },
+                ),
+                _buildDrawerItem(
+                  context: context,
+                  icon: Icons.content_copy_rounded,
+                  title: 'Templates',
+                  onTap: () {
+                    Navigator.of(context).pop();
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => const TemplatesScreen(),
+                      ),
+                    );
+                  },
+                ),
+
+                const SizedBox(height: 8),
+
+                // Wellness Section
+                _buildSectionHeader(context, 'Wellness'),
+                _buildDrawerItem(
+                  context: context,
+                  icon: Icons.mood_rounded,
+                  title: 'Mood Tracker',
+                  onTap: () {
+                    Navigator.of(context).pop();
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => const MoodTrackerScreen(),
+                      ),
+                    );
+                  },
+                ),
+
+                const SizedBox(height: 8),
+
+                // Rewards & Progress Section
+                _buildSectionHeader(context, 'Rewards'),
+                _buildDrawerItem(
+                  context: context,
+                  icon: Icons.pets_rounded,
+                  title: 'My Pet',
+                  onTap: () {
+                    Navigator.of(context).pop();
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => const VirtualPetScreen(),
+                      ),
+                    );
+                  },
+                ),
+                _buildDrawerItem(
+                  context: context,
+                  icon: Icons.emoji_events_rounded,
+                  title: 'Achievements',
+                  onTap: () {
+                    Navigator.of(context).pop();
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => const AchievementsScreen(),
+                      ),
+                    );
+                  },
+                ),
+                _buildDrawerItem(
+                  context: context,
+                  icon: Icons.bolt_rounded,
+                  title: 'Weekly Quests',
+                  onTap: () {
+                    Navigator.of(context).pop();
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => const WeeklyQuestsScreen(),
+                      ),
+                    );
+                  },
+                ),
+
+                const SizedBox(height: 8),
+                const Divider(indent: 16, endIndent: 16, height: 1),
+                const SizedBox(height: 8),
+
+                // Account & Settings Section
                 _buildDrawerItem(
                   context: context,
                   icon: Icons.person_rounded,
@@ -176,6 +334,21 @@ class AppDrawer extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildSectionHeader(BuildContext context, String title) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 20, top: 8, bottom: 4),
+      child: Text(
+        title.toUpperCase(),
+        style: TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+          letterSpacing: 0.8,
+        ),
       ),
     );
   }

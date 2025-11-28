@@ -374,6 +374,41 @@ class RewardsService {
     }
   }
 
+  /// Add XP and update level (for achievement rewards)
+  Future<void> addXP({
+    required String userId,
+    required int amount,
+  }) async {
+    if (amount == 0) return;
+
+    try {
+      await _firestore.runTransaction((transaction) async {
+        final userRewardsDoc = _userRewardsRef.doc(userId);
+        final snapshot = await transaction.get(userRewardsDoc);
+
+        int currentXp = 0;
+        if (snapshot.exists) {
+          final data = snapshot.data() as Map<String, dynamic>?;
+          currentXp = data?['xp'] ?? 0;
+        }
+
+        final newXp = currentXp + amount;
+        final newLevel = UserRewards.calculateLevel(newXp);
+
+        transaction.set(
+          userRewardsDoc,
+          {
+            'xp': newXp,
+            'level': newLevel,
+          },
+          SetOptions(merge: true),
+        );
+      });
+    } catch (e) {
+      debugPrint('Error adding XP: $e');
+    }
+  }
+
   /// Check daily login and update streak
   Future<Map<String, dynamic>?> checkDailyLogin(String userId) async {
     try {
