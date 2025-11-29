@@ -1,9 +1,11 @@
+import 'dart:async';
 import 'dart:math' as math;
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:check_bird/models/focus/focus_session.dart';
 import 'package:check_bird/services/focus_service.dart';
+import 'package:check_bird/services/ambient_sound_service.dart';
 
 class EnhancedFocusScreen extends StatefulWidget {
   final String? taskId;
@@ -22,19 +24,20 @@ class EnhancedFocusScreen extends StatefulWidget {
 class _EnhancedFocusScreenState extends State<EnhancedFocusScreen>
     with TickerProviderStateMixin {
   final FocusService _focusService = FocusService();
+  final AmbientSoundService _ambientService = AmbientSoundService();
 
   late AnimationController _pulseController;
   late AnimationController _progressController;
 
   bool _showSettings = false;
 
-  // Ambient sounds
+  // Ambient sounds configuration
   String? _selectedAmbience;
   final List<Map<String, dynamic>> _ambienceSounds = [
     {'name': 'None', 'icon': Icons.volume_off, 'color': Colors.grey},
     {'name': 'Rain', 'icon': Icons.water_drop, 'color': Colors.blue},
     {'name': 'Forest', 'icon': Icons.forest, 'color': Colors.green},
-    {'name': 'Coffee Shop', 'icon': Icons.coffee, 'color': Colors.brown},
+    {'name': 'Café', 'icon': Icons.coffee, 'color': Colors.brown},
     {'name': 'Ocean', 'icon': Icons.waves, 'color': Colors.cyan},
     {
       'name': 'Fire',
@@ -48,6 +51,7 @@ class _EnhancedFocusScreenState extends State<EnhancedFocusScreen>
     super.initState();
     _focusService.initialize();
     _focusService.addListener(_onServiceUpdate);
+    _ambientService.addListener(_onAmbientUpdate);
 
     _pulseController = AnimationController(
       vsync: this,
@@ -61,17 +65,41 @@ class _EnhancedFocusScreenState extends State<EnhancedFocusScreen>
   }
 
   void _onServiceUpdate() {
-    if (mounted) {
-      setState(() {});
-    }
+    if (mounted) setState(() {});
+  }
+
+  void _onAmbientUpdate() {
+    if (mounted) setState(() {});
   }
 
   @override
   void dispose() {
     _focusService.removeListener(_onServiceUpdate);
+    _ambientService.removeListener(_onAmbientUpdate);
     _pulseController.dispose();
     _progressController.dispose();
+    _ambientService.stop();
     super.dispose();
+  }
+
+  Future<void> _playAmbientSound(String soundName) async {
+    if (soundName == 'None') {
+      await _ambientService.stop();
+      return;
+    }
+
+    final success = await _ambientService.play(soundName);
+    if (!success && mounted) {
+      setState(() => _selectedAmbience = null);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(_ambientService.errorMessage ?? 'Could not play sound'),
+          behavior: SnackBarBehavior.floating,
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        ),
+      );
+    }
   }
 
   @override
@@ -465,18 +493,30 @@ class _EnhancedFocusScreenState extends State<EnhancedFocusScreen>
             padding: const EdgeInsets.symmetric(horizontal: 8),
             itemBuilder: (context, index) {
               final sound = _ambienceSounds[index];
-              final isSelected = _selectedAmbience == sound['name'];
+              final soundName = sound['name'] as String;
+              final isSelected = _selectedAmbience == soundName;
               final color = sound['color'] as Color;
+
+              final isLoading =
+                  _ambientService.isLoading && _selectedAmbience == soundName;
+              final isPlaying = _ambientService.isPlaying &&
+                  _ambientService.currentSound == soundName;
 
               return Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 6),
                 child: GestureDetector(
-                  onTap: () {
-                    HapticFeedback.lightImpact();
-                    setState(() {
-                      _selectedAmbience = isSelected ? null : sound['name'];
-                    });
-                  },
+                  onTap: _ambientService.isLoading
+                      ? null
+                      : () async {
+                          HapticFeedback.lightImpact();
+                          if (isSelected) {
+                            setState(() => _selectedAmbience = null);
+                            await _ambientService.stop();
+                          } else {
+                            setState(() => _selectedAmbience = soundName);
+                            await _playAmbientSound(soundName);
+                          }
+                        },
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 200),
                     width: 64,
@@ -493,15 +533,32 @@ class _EnhancedFocusScreenState extends State<EnhancedFocusScreen>
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(
-                          sound['icon'],
-                          color:
-                              isSelected ? color : colorScheme.onSurfaceVariant,
-                          size: 24,
-                        ),
+                        if (isLoading)
+                          SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation(color),
+                            ),
+                          )
+                        else if (isPlaying)
+                          Icon(
+                            Icons.volume_up_rounded,
+                            color: color,
+                            size: 24,
+                          )
+                        else
+                          Icon(
+                            sound['icon'],
+                            color: isSelected
+                                ? color
+                                : colorScheme.onSurfaceVariant,
+                            size: 24,
+                          ),
                         const SizedBox(height: 6),
                         Text(
-                          sound['name'],
+                          soundName,
                           style: TextStyle(
                             fontSize: 10,
                             fontWeight:
