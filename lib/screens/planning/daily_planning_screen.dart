@@ -16,6 +16,8 @@ class _DailyPlanningScreenState extends State<DailyPlanningScreen> {
 
   int _currentStep = 0;
   final int _totalSteps = 4;
+  bool _isLoading = true;
+  bool _isSaving = false;
 
   // Form controllers
   final _intentionController = TextEditingController();
@@ -30,9 +32,27 @@ class _DailyPlanningScreenState extends State<DailyPlanningScreen> {
   @override
   void initState() {
     super.initState();
-    _planningService.initialize();
+    _initializeService();
     _planningService.addListener(_onUpdate);
+  }
+
+  Future<void> _initializeService() async {
+    try {
+      // Add timeout to prevent endless loading
+      await _planningService.initialize().timeout(
+        const Duration(seconds: 5),
+        onTimeout: () {
+          debugPrint('PlanningService initialization timed out');
+        },
+      );
+    } catch (e) {
+      debugPrint('Error initializing PlanningService: $e');
+    }
+
     _loadExistingData();
+    if (mounted) {
+      setState(() => _isLoading = false);
+    }
   }
 
   void _loadExistingData() {
@@ -65,6 +85,26 @@ class _DailyPlanningScreenState extends State<DailyPlanningScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+
+    if (_isLoading) {
+      return Scaffold(
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const CircularProgressIndicator(),
+              const SizedBox(height: 16),
+              Text(
+                'Loading your plan...',
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
 
     return Scaffold(
       body: SafeArea(
@@ -127,7 +167,7 @@ class _DailyPlanningScreenState extends State<DailyPlanningScreen> {
                   if (_currentStep > 0)
                     Expanded(
                       child: OutlinedButton(
-                        onPressed: _previousStep,
+                        onPressed: _isSaving ? null : _previousStep,
                         child: const Text('Back'),
                       ),
                     )
@@ -137,12 +177,21 @@ class _DailyPlanningScreenState extends State<DailyPlanningScreen> {
                   Expanded(
                     flex: 2,
                     child: FilledButton(
-                      onPressed: _nextStep,
-                      child: Text(
-                        _currentStep == _totalSteps - 1
-                            ? 'Complete Plan'
-                            : 'Continue',
-                      ),
+                      onPressed: _isSaving ? null : _nextStep,
+                      child: _isSaving
+                          ? const SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : Text(
+                              _currentStep == _totalSteps - 1
+                                  ? 'Complete Plan'
+                                  : 'Continue',
+                            ),
                     ),
                   ),
                 ],
@@ -754,46 +803,68 @@ class _DailyPlanningScreenState extends State<DailyPlanningScreen> {
   }
 
   void _nextStep() async {
-    // Save current step data
-    switch (_currentStep) {
-      case 0:
-        if (_intentionController.text.isNotEmpty) {
-          await _planningService.setMorningIntention(_intentionController.text);
-        }
-        break;
-      case 1:
-        final priorities = _priorityControllers
-            .map((c) => c.text)
-            .where((t) => t.isNotEmpty)
-            .toList();
-        await _planningService.setTopPriorities(priorities);
-        break;
-      case 2:
-        await _planningService.setEnergyLevel(_energyLevel);
-        if (_focusArea != null) {
-          await _planningService.setFocusArea(_focusArea);
-        }
-        break;
-      case 3:
-        // Complete and exit
-        if (mounted) {
-          Navigator.pop(context);
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('🎉 Daily plan created! Have a productive day!'),
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
-        }
-        return;
-    }
+    if (_isSaving) return;
 
-    // Move to next step
-    if (_currentStep < _totalSteps - 1) {
-      _pageController.nextPage(
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeInOut,
-      );
+    setState(() => _isSaving = true);
+
+    try {
+      // Save current step data
+      switch (_currentStep) {
+        case 0:
+          if (_intentionController.text.isNotEmpty) {
+            await _planningService
+                .setMorningIntention(_intentionController.text);
+          }
+          break;
+        case 1:
+          final priorities = _priorityControllers
+              .map((c) => c.text)
+              .where((t) => t.isNotEmpty)
+              .toList();
+          await _planningService.setTopPriorities(priorities);
+          break;
+        case 2:
+          await _planningService.setEnergyLevel(_energyLevel);
+          if (_focusArea != null) {
+            await _planningService.setFocusArea(_focusArea);
+          }
+          break;
+        case 3:
+          // Complete and exit
+          if (mounted) {
+            Navigator.pop(context);
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('🎉 Daily plan created! Have a productive day!'),
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+          }
+          return;
+      }
+
+      // Move to next step
+      if (_currentStep < _totalSteps - 1) {
+        _pageController.nextPage(
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+        );
+      }
+    } catch (e) {
+      debugPrint('Error in _nextStep: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error saving: $e'),
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isSaving = false);
+      }
     }
   }
 }

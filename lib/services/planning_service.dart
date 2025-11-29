@@ -19,15 +19,30 @@ class PlanningService extends ChangeNotifier {
 
   DailyPlan? _todaysPlan;
   List<DailyPlan> _recentPlans = [];
+  bool _isInitialized = false;
+  bool _isInitializing = false;
 
   DailyPlan? get todaysPlan => _todaysPlan;
   List<DailyPlan> get recentPlans => _recentPlans;
   bool get hasTodaysPlan => _todaysPlan?.hasMorningPlan ?? false;
+  bool get isInitialized => _isInitialized;
 
   /// Initialize service
   Future<void> initialize() async {
-    await _loadTodaysPlan();
-    await _loadRecentPlans();
+    // Prevent multiple concurrent initializations
+    if (_isInitialized || _isInitializing) return;
+    _isInitializing = true;
+
+    try {
+      await _loadTodaysPlan();
+      // Load recent plans in background, don't block
+      _loadRecentPlans();
+      _isInitialized = true;
+    } catch (e) {
+      debugPrint('Error in PlanningService.initialize: $e');
+    } finally {
+      _isInitializing = false;
+    }
   }
 
   /// Load today's plan
@@ -62,14 +77,15 @@ class PlanningService extends ChangeNotifier {
       await prefs.setString(
           'daily_plan_$dateKey', json.encode(_todaysPlan!.toJson()));
 
-      // Sync to Firestore
+      // Sync to Firestore in background (don't await)
       if (_userId != null) {
-        await _firestore
+        _firestore
             .collection('users')
             .doc(_userId)
             .collection('daily_plans')
             .doc(dateKey)
-            .set(_todaysPlan!.toJson());
+            .set(_todaysPlan!.toJson())
+            .catchError((e) => debugPrint('Firestore sync error: $e'));
       }
     } catch (e) {
       debugPrint('Error saving today\'s plan: $e');
