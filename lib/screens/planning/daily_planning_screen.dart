@@ -18,6 +18,8 @@ class _DailyPlanningScreenState extends State<DailyPlanningScreen> {
   final int _totalSteps = 4;
   bool _isLoading = true;
   bool _isSaving = false;
+  bool _createTasksFromPriorities = true;
+  bool _scheduleTimeBlockNotifications = true;
 
   // Form controllers
   final _intentionController = TextEditingController();
@@ -366,6 +368,34 @@ class _DailyPlanningScreenState extends State<DailyPlanningScreen> {
               ],
             ),
           ),
+
+          const SizedBox(height: 24),
+
+          // Option to create tasks from priorities
+          Container(
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surfaceContainerHighest,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: CheckboxListTile(
+              value: _createTasksFromPriorities,
+              onChanged: (value) {
+                setState(() => _createTasksFromPriorities = value ?? true);
+              },
+              title: const Text('Create tasks from priorities'),
+              subtitle: const Text(
+                'Add these priorities to your task list',
+                style: TextStyle(fontSize: 12),
+              ),
+              secondary: Icon(
+                Icons.task_alt,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -568,6 +598,34 @@ class _DailyPlanningScreenState extends State<DailyPlanningScreen> {
                 },
               );
             }).toList(),
+          ),
+
+          const SizedBox(height: 24),
+
+          // Option to schedule notifications
+          Container(
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surfaceContainerHighest,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: CheckboxListTile(
+              value: _scheduleTimeBlockNotifications,
+              onChanged: (value) {
+                setState(() => _scheduleTimeBlockNotifications = value ?? true);
+              },
+              title: const Text('Notify when blocks start'),
+              subtitle: const Text(
+                'Get reminders when each time block begins',
+                style: TextStyle(fontSize: 12),
+              ),
+              secondary: Icon(
+                Icons.notifications_active,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
           ),
         ],
       ),
@@ -822,6 +880,11 @@ class _DailyPlanningScreenState extends State<DailyPlanningScreen> {
               .where((t) => t.isNotEmpty)
               .toList();
           await _planningService.setTopPriorities(priorities);
+
+          // Create tasks from priorities if enabled
+          if (_createTasksFromPriorities && priorities.isNotEmpty) {
+            await _planningService.createTasksFromPriorities(priorities);
+          }
           break;
         case 2:
           await _planningService.setEnergyLevel(_energyLevel);
@@ -830,6 +893,11 @@ class _DailyPlanningScreenState extends State<DailyPlanningScreen> {
           }
           break;
         case 3:
+          // Schedule time block notifications if enabled
+          if (_scheduleTimeBlockNotifications) {
+            await _planningService.scheduleTimeBlockNotifications();
+          }
+
           // Complete and exit
           if (mounted) {
             Navigator.pop(context);

@@ -5,6 +5,9 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:check_bird/models/planning/daily_plan.dart';
+import 'package:check_bird/models/todo/todo.dart';
+import 'package:check_bird/models/todo/todo_list_controller.dart';
+import 'package:check_bird/services/notification.dart';
 
 /// Service for daily planning and time blocking
 class PlanningService extends ChangeNotifier {
@@ -406,6 +409,77 @@ class PlanningService extends ChangeNotifier {
     }
 
     return insights;
+  }
+
+  /// Create tasks from priorities
+  Future<void> createTasksFromPriorities(List<String> priorities) async {
+    final controller = TodoListController();
+    final today = DateTime.now();
+    final endOfDay = DateTime(today.year, today.month, today.day, 23, 59);
+
+    for (final priority in priorities) {
+      if (priority.trim().isEmpty) continue;
+
+      final task = Todo.task(
+        todoName: priority,
+        todoDescription: 'Created from Daily Planning priorities',
+        deadline: endOfDay,
+        textColor: 0xFFFFFFFF,
+        backgroundColor: 0xFF6750A4, // Primary color
+      );
+
+      await controller.addTodo(task);
+    }
+
+    debugPrint('Created ${priorities.length} tasks from priorities');
+  }
+
+  /// Schedule notifications for time blocks
+  Future<void> scheduleTimeBlockNotifications() async {
+    final plan = _todaysPlan;
+    if (plan == null) return;
+
+    final notificationService = NotificationService();
+    final today = DateTime.now();
+
+    for (final block in plan.timeBlocks) {
+      // Create DateTime for the block start time
+      final blockStart = DateTime(
+        today.year,
+        today.month,
+        today.day,
+        block.startTime.hour,
+        block.startTime.minute,
+      );
+
+      // Only schedule if it's in the future
+      if (blockStart.isAfter(today)) {
+        final notificationId = 'timeblock_${block.id}'.hashCode.abs() % 100000;
+
+        await notificationService.createScheduleNotification(
+          notificationId,
+          '⏰ Time Block Starting',
+          '${block.title} - Time to focus!',
+          blockStart,
+          payload: 'timeblock:${block.id}',
+        );
+
+        debugPrint('Scheduled notification for ${block.title} at $blockStart');
+      }
+    }
+  }
+
+  /// Cancel all time block notifications
+  Future<void> cancelTimeBlockNotifications() async {
+    final plan = _todaysPlan;
+    if (plan == null) return;
+
+    final notificationService = NotificationService();
+
+    for (final block in plan.timeBlocks) {
+      final notificationId = 'timeblock_${block.id}'.hashCode.abs() % 100000;
+      await notificationService.cancelScheduledNotifications(notificationId);
+    }
   }
 
   String _getDateKey(DateTime date) {

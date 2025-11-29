@@ -5,6 +5,8 @@ import 'package:check_bird/screens/habits/habit_stack_screen.dart';
 import 'package:check_bird/screens/mood/mood_tracker_screen.dart';
 import 'package:check_bird/screens/pet/virtual_pet_screen.dart';
 import 'package:check_bird/screens/planning/daily_planning_screen.dart';
+import 'package:check_bird/screens/planning/evening_review_screen.dart';
+import 'package:check_bird/screens/planning/planning_dashboard_screen.dart';
 import 'package:check_bird/screens/profile/profile_screen.dart';
 import 'package:check_bird/screens/quests/weekly_quests_screen.dart';
 import 'package:check_bird/screens/setting/setting_screen.dart';
@@ -132,6 +134,32 @@ class AppDrawer extends StatelessWidget {
                     Navigator.of(context).push(
                       MaterialPageRoute(
                         builder: (context) => const DailyPlanningScreen(),
+                      ),
+                    );
+                  },
+                ),
+                _buildDrawerItem(
+                  context: context,
+                  icon: Icons.nightlight_round,
+                  title: 'Evening Review',
+                  onTap: () {
+                    Navigator.of(context).pop();
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => const EveningReviewScreen(),
+                      ),
+                    );
+                  },
+                ),
+                _buildDrawerItem(
+                  context: context,
+                  icon: Icons.dashboard_rounded,
+                  title: 'Planning Dashboard',
+                  onTap: () {
+                    Navigator.of(context).pop();
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => const PlanningDashboardScreen(),
                       ),
                     );
                   },

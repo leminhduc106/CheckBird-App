@@ -5,6 +5,7 @@ import 'package:check_bird/screens/task/widgets/show_date.dart';
 import 'package:check_bird/services/notification.dart';
 import 'package:check_bird/services/authentication.dart';
 import 'package:check_bird/widgets/focus/focus_widget.dart';
+import 'package:check_bird/widgets/planning/todays_plan_widget.dart';
 import 'package:check_bird/widgets/rewards/daily_reward_dialog.dart';
 import 'package:flutter/material.dart';
 
@@ -90,6 +91,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: GroupList(changeTab: widget.changeTab!),
                 ),
               ],
+              // Today's Plan Widget - Shows morning intention and priorities
+              const TodaysPlanWidget(),
+
               const ShowDate(text: "Today's Tasks"),
               ToDoListToday(today: DateTime.now()),
               const SizedBox(height: 80), // Space for FAB
