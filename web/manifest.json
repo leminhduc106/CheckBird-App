@@ -1,11 +1,11 @@
 {
-    "name": "check_bird",
-    "short_name": "check_bird",
+    "name": "CheckBird - Productivity & Focus",
+    "short_name": "CheckBird",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#6750A4",
+    "theme_color": "#6750A4",
+    "description": "Your productivity companion for tasks, habits, focus timer, and daily planning.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [
