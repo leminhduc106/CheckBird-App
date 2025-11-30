@@ -49,7 +49,8 @@ class AppInitializer extends StatelessWidget {
 
     // Lock portrait mode (only on mobile)
     if (!kIsWeb) {
-      await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+      await SystemChrome.setPreferredOrientations(
+          [DeviceOrientation.portraitUp]);
     }
 
     // Hive setup - web uses IndexedDB, mobile uses file system
@@ -60,7 +61,12 @@ class AppInitializer extends StatelessWidget {
     if (!Hive.isAdapterRegistered(1)) {
       Hive.registerAdapter(TodoTypeAdapter());
     }
-    await TodoListController().openBox();
+    
+    try {
+      await TodoListController().openBox();
+    } catch (e) {
+      debugPrint('Hive openBox failed: $e');
+    }
 
     // Notifications (only on mobile - not supported on web)
     if (!kIsWeb) {
@@ -69,8 +75,13 @@ class AppInitializer extends StatelessWidget {
       await TodoListController().rescheduleAllNotifications();
     }
 
-    // Settings
-    await Settings.init(cacheProvider: SharePreferenceCache());
+    // Settings - wrap in try-catch for web compatibility
+    try {
+      await Settings.init(cacheProvider: SharePreferenceCache());
+    } catch (e) {
+      // Settings may fail on web, continue without it
+      debugPrint('Settings init failed: $e');
+    }
   }
 
   @override

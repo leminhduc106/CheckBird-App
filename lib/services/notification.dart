@@ -1,9 +1,12 @@
-import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+
+// Helper to check platform without using dart:io directly on web
+bool get _isAndroid => !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
+bool get _isIOS => !kIsWeb && defaultTargetPlatform == TargetPlatform.iOS;
 
 class NotificationService {
   NotificationService._internal();
@@ -69,7 +72,7 @@ class NotificationService {
     bool granted = false;
 
     try {
-      if (Platform.isAndroid) {
+      if (_isAndroid) {
         // Request notification permission (Android 13+)
         final androidPlugin = flutterLocalNotificationsPlugin
             .resolvePlatformSpecificImplementation<
@@ -88,7 +91,7 @@ class NotificationService {
           debugPrint(
               'NotificationService: Android notification permission granted: $granted, exact alarm: $exactAlarmGranted');
         }
-      } else if (Platform.isIOS) {
+      } else if (_isIOS) {
         final iosPlugin = flutterLocalNotificationsPlugin
             .resolvePlatformSpecificImplementation<
                 IOSFlutterLocalNotificationsPlugin>();
@@ -154,7 +157,7 @@ class NotificationService {
     );
 
     // Create Android notification channel (required for Android 8.0+)
-    if (Platform.isAndroid) {
+    if (_isAndroid) {
       final androidPlugin =
           flutterLocalNotificationsPlugin.resolvePlatformSpecificImplementation<
               AndroidFlutterLocalNotificationsPlugin>();
@@ -207,7 +210,7 @@ class NotificationService {
     }
 
     // Check exact alarm permission on Android
-    if (Platform.isAndroid) {
+    if (_isAndroid) {
       final androidPlugin =
           flutterLocalNotificationsPlugin.resolvePlatformSpecificImplementation<
               AndroidFlutterLocalNotificationsPlugin>();
