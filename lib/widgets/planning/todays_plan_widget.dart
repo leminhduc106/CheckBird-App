@@ -158,6 +158,7 @@ class _TodaysPlanWidgetState extends State<TodaysPlanWidget> {
     final isEvening = DateTime.now().hour >= 18;
     final hasEveningReview = plan.hasEveningReview;
     final currentBlock = _getCurrentTimeBlock(plan);
+    final energySuggestion = _planningService.getEnergySuggestion();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -221,6 +222,31 @@ class _TodaysPlanWidgetState extends State<TodaysPlanWidget> {
               ),
           ],
         ),
+
+        // Energy suggestion based on mood trends
+        if (energySuggestion != null && !isEvening) ...[
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.5),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    energySuggestion,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
 
         if (plan.topPriorities.isNotEmpty) ...[
           const SizedBox(height: 16),

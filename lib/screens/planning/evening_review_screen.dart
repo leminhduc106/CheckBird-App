@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:check_bird/services/planning_service.dart';
+import 'package:check_bird/widgets/reward_toast_overlay.dart';
 
 class EveningReviewScreen extends StatefulWidget {
   const EveningReviewScreen({super.key});
@@ -558,20 +559,34 @@ class _EveningReviewScreenState extends State<EveningReviewScreen> {
           }
           break;
         case 2:
-          // Complete the evening review
-          await _planningService.setEveningReflection(
+          // Complete the evening review and get rewards
+          final result = await _planningService.setEveningReflection(
             _reflectionController.text,
             _dayRating,
           );
 
           if (mounted) {
-            Navigator.pop(context);
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('🌙 Evening review complete! Rest well.'),
-                behavior: SnackBarBehavior.floating,
-              ),
+            // Show rewards if earned
+            final coins = result['coins'] as int? ?? 0;
+            final xp = result['xp'] as int? ?? 0;
+            final streak = result['streak'] as int? ?? 0;
+            final milestone = result['milestoneReached'] as String?;
+
+            if (coins > 0 || xp > 0) {
+              RewardToastController().showReward(coins: coins, xp: xp);
+            }
+
+            // Show completion dialog with stats
+            await _showCompletionDialog(
+              streak: streak,
+              coins: coins,
+              xp: xp,
+              milestone: milestone,
             );
+
+            if (mounted) {
+              Navigator.pop(context);
+            }
           }
           return;
       }
@@ -598,6 +613,222 @@ class _EveningReviewScreenState extends State<EveningReviewScreen> {
       if (mounted) {
         setState(() => _isSaving = false);
       }
+    }
+  }
+
+  Future<void> _showCompletionDialog({
+    required int streak,
+    required int coins,
+    required int xp,
+    String? milestone,
+  }) async {
+    final theme = Theme.of(context);
+
+    return showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Celebration icon
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    theme.colorScheme.primary.withOpacity(0.2),
+                    theme.colorScheme.tertiary.withOpacity(0.2),
+                  ],
+                ),
+                shape: BoxShape.circle,
+              ),
+              child: const Text(
+                '🌙',
+                style: TextStyle(fontSize: 48),
+              ),
+            ),
+            const SizedBox(height: 20),
+
+            // Title
+            Text(
+              milestone != null
+                  ? '🎉 Milestone Reached!'
+                  : 'Evening Review Complete!',
+              style: theme.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+
+            // Subtitle
+            Text(
+              'Great job reflecting on your day!',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+
+            // Streak indicator
+            if (streak > 0) ...[
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                decoration: BoxDecoration(
+                  color: Colors.orange.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: Colors.orange.withOpacity(0.3),
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text('🔥', style: TextStyle(fontSize: 24)),
+                    const SizedBox(width: 12),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '$streak Day Streak!',
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.orange.shade800,
+                          ),
+                        ),
+                        Text(
+                          streak == 1
+                              ? 'You started your streak!'
+                              : 'Keep it going tomorrow!',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: Colors.orange.shade700,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
+
+            // Rewards earned
+            if (coins > 0 || xp > 0) ...[
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  if (coins > 0) ...[
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.amber.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Text('🪙', style: TextStyle(fontSize: 16)),
+                          const SizedBox(width: 6),
+                          Text(
+                            '+$coins',
+                            style: theme.textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: Colors.amber.shade800,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                  ],
+                  if (xp > 0)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.primary.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Text('⭐', style: TextStyle(fontSize: 16)),
+                          const SizedBox(width: 6),
+                          Text(
+                            '+$xp XP',
+                            style: theme.textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: theme.colorScheme.primary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 16),
+            ],
+
+            // Milestone message
+            if (milestone != null) ...[
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      Colors.purple.shade100,
+                      Colors.blue.shade100,
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  _getMilestoneMessage(milestone),
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w500,
+                    color: Colors.purple.shade800,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
+          ],
+        ),
+        actions: [
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Continue'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _getMilestoneMessage(String milestone) {
+    switch (milestone) {
+      case 'streak_3':
+        return '🌟 3 days of reflection! You\'re building a great habit.';
+      case 'streak_7':
+        return '🎯 A full week! Your self-awareness is growing stronger.';
+      case 'streak_14':
+        return '💎 Two weeks! You\'re becoming a reflection master.';
+      case 'streak_30':
+        return '🏆 30 days! Incredible dedication to self-improvement!';
+      default:
+        return '🎉 Congratulations on reaching a new milestone!';
     }
   }
 }

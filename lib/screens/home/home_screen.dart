@@ -1,11 +1,11 @@
 import 'package:check_bird/screens/home/widgets/group_list.dart';
 import 'package:check_bird/screens/home/widgets/list_todo_today.dart';
-import 'package:check_bird/screens/home/widgets/quotes.dart';
 import 'package:check_bird/screens/task/widgets/show_date.dart';
 import 'package:check_bird/services/notification.dart';
 import 'package:check_bird/services/authentication.dart';
 import 'package:check_bird/widgets/focus/focus_widget.dart';
 import 'package:check_bird/widgets/planning/todays_plan_widget.dart';
+import 'package:check_bird/widgets/planning/insights_widget.dart';
 import 'package:check_bird/widgets/rewards/daily_reward_dialog.dart';
 import 'package:flutter/material.dart';
 
@@ -62,7 +62,10 @@ class _HomeScreenState extends State<HomeScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const QuotesAPI(),
+              // InsightsWidget handles everything: quotes for new users,
+              // mood trends + gratitude/quotes for engaged users
+              const InsightsWidget(),
+
               if (Authentication.user != null) ...[
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),

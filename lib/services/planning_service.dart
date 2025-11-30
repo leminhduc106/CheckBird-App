@@ -8,6 +8,7 @@ import 'package:check_bird/models/planning/daily_plan.dart';
 import 'package:check_bird/models/todo/todo.dart';
 import 'package:check_bird/models/todo/todo_list_controller.dart';
 import 'package:check_bird/services/notification.dart';
+import 'package:check_bird/services/rewards_service.dart';
 
 /// Service for daily planning and time blocking
 class PlanningService extends ChangeNotifier {
@@ -17,6 +18,7 @@ class PlanningService extends ChangeNotifier {
 
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
+  final RewardsService _rewardsService = RewardsService();
 
   String? get _userId => _auth.currentUser?.uid;
 
@@ -25,10 +27,18 @@ class PlanningService extends ChangeNotifier {
   bool _isInitialized = false;
   bool _isInitializing = false;
 
+  // Streak tracking
+  int _eveningReviewStreak = 0;
+  int _longestEveningReviewStreak = 0;
+  DateTime? _lastEveningReviewDate;
+
   DailyPlan? get todaysPlan => _todaysPlan;
   List<DailyPlan> get recentPlans => _recentPlans;
   bool get hasTodaysPlan => _todaysPlan?.hasMorningPlan ?? false;
   bool get isInitialized => _isInitialized;
+  int get eveningReviewStreak => _eveningReviewStreak;
+  int get longestEveningReviewStreak => _longestEveningReviewStreak;
+  DateTime? get lastEveningReviewDate => _lastEveningReviewDate;
 
   /// Initialize service
   Future<void> initialize() async {
@@ -38,6 +48,7 @@ class PlanningService extends ChangeNotifier {
 
     try {
       await _loadTodaysPlan();
+      await _loadStreakData();
       // Load recent plans in background, don't block
       _loadRecentPlans();
       _isInitialized = true;
@@ -45,6 +56,62 @@ class PlanningService extends ChangeNotifier {
       debugPrint('Error in PlanningService.initialize: $e');
     } finally {
       _isInitializing = false;
+    }
+  }
+
+  /// Load streak data from local storage
+  Future<void> _loadStreakData() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      _eveningReviewStreak = prefs.getInt('evening_review_streak') ?? 0;
+      _longestEveningReviewStreak =
+          prefs.getInt('longest_evening_review_streak') ?? 0;
+      final lastDateStr = prefs.getString('last_evening_review_date');
+      if (lastDateStr != null) {
+        _lastEveningReviewDate = DateTime.tryParse(lastDateStr);
+      }
+
+      // Validate streak - check if it should be reset
+      _validateStreak();
+    } catch (e) {
+      debugPrint('Error loading streak data: $e');
+    }
+  }
+
+  /// Validate and possibly reset streak if days were missed
+  void _validateStreak() {
+    if (_lastEveningReviewDate == null) return;
+
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final lastReviewDay = DateTime(
+      _lastEveningReviewDate!.year,
+      _lastEveningReviewDate!.month,
+      _lastEveningReviewDate!.day,
+    );
+
+    final daysSinceLastReview = today.difference(lastReviewDay).inDays;
+
+    // If more than 1 day has passed without review, reset streak
+    if (daysSinceLastReview > 1) {
+      _eveningReviewStreak = 0;
+      _saveStreakData();
+    }
+  }
+
+  /// Save streak data to local storage
+  Future<void> _saveStreakData() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setInt('evening_review_streak', _eveningReviewStreak);
+      await prefs.setInt(
+          'longest_evening_review_streak', _longestEveningReviewStreak);
+      if (_lastEveningReviewDate != null) {
+        await prefs.setString('last_evening_review_date',
+            _lastEveningReviewDate!.toIso8601String());
+      }
+    } catch (e) {
+      debugPrint('Error saving streak data: $e');
     }
   }
 
@@ -258,8 +325,14 @@ class PlanningService extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Set evening reflection
-  Future<void> setEveningReflection(String reflection, int rating) async {
+  /// Set evening reflection and update streak
+  /// Returns a map with reward info: {coins, xp, streak, isNewStreak, milestoneReached}
+  Future<Map<String, dynamic>> setEveningReflection(
+      String reflection, int rating) async {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final isFirstReviewToday = !(_todaysPlan?.hasEveningReview ?? false);
+
     _todaysPlan = _todaysPlan?.copyWith(
           eveningReflection: reflection,
           dayRating: rating.clamp(1, 5),
@@ -271,7 +344,84 @@ class PlanningService extends ChangeNotifier {
           completed: true,
         );
     await _saveTodaysPlan();
+
+    // Update streak tracking
+    int coinsEarned = 0;
+    int xpEarned = 0;
+    bool isNewStreak = false;
+    String? milestoneReached;
+
+    if (isFirstReviewToday) {
+      // Calculate if this continues or starts a new streak
+      if (_lastEveningReviewDate != null) {
+        final lastReviewDay = DateTime(
+          _lastEveningReviewDate!.year,
+          _lastEveningReviewDate!.month,
+          _lastEveningReviewDate!.day,
+        );
+        final yesterday = today.subtract(const Duration(days: 1));
+
+        if (lastReviewDay.isAtSameMomentAs(yesterday)) {
+          // Streak continues!
+          _eveningReviewStreak++;
+        } else if (!lastReviewDay.isAtSameMomentAs(today)) {
+          // Streak broken, starting new one
+          _eveningReviewStreak = 1;
+          isNewStreak = true;
+        }
+        // If same day, don't change streak (already reviewed today)
+      } else {
+        // First ever review
+        _eveningReviewStreak = 1;
+        isNewStreak = true;
+      }
+
+      _lastEveningReviewDate = now;
+
+      // Update longest streak
+      if (_eveningReviewStreak > _longestEveningReviewStreak) {
+        _longestEveningReviewStreak = _eveningReviewStreak;
+      }
+
+      await _saveStreakData();
+
+      // Calculate rewards
+      coinsEarned = 3 + (_eveningReviewStreak ~/ 3); // +1 coin every 3 days
+      xpEarned = 15 + (_eveningReviewStreak ~/ 2) * 5; // +5 XP every 2 days
+
+      // Milestone bonuses
+      final milestones = {
+        3: 'streak_3',
+        7: 'streak_7',
+        14: 'streak_14',
+        30: 'streak_30'
+      };
+      for (final entry in milestones.entries) {
+        if (_eveningReviewStreak == entry.key) {
+          milestoneReached = entry.value;
+          coinsEarned += entry.key; // Bonus coins equal to streak number
+          xpEarned += entry.key * 5; // Bonus XP
+          break;
+        }
+      }
+
+      // Award rewards through RewardsService
+      if (_userId != null) {
+        await _rewardsService.addCoins(userId: _userId!, amount: coinsEarned);
+        await _rewardsService.addXP(userId: _userId!, amount: xpEarned);
+      }
+    }
+
     notifyListeners();
+
+    return {
+      'coins': coinsEarned,
+      'xp': xpEarned,
+      'streak': _eveningReviewStreak,
+      'isNewStreak': isNewStreak,
+      'milestoneReached': milestoneReached,
+      'longestStreak': _longestEveningReviewStreak,
+    };
   }
 
   /// Get suggested time blocks based on typical schedule
@@ -484,5 +634,136 @@ class PlanningService extends ChangeNotifier {
 
   String _getDateKey(DateTime date) {
     return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+  }
+
+  /// Get mood/rating data for the last N days (for trend visualization)
+  /// Returns a list of {date, rating} maps, ordered oldest to newest
+  List<Map<String, dynamic>> getMoodTrend({int days = 7}) {
+    final trend = <Map<String, dynamic>>[];
+    final now = DateTime.now();
+
+    // Include today's plan if it has a review
+    if (_todaysPlan != null && _todaysPlan!.hasEveningReview) {
+      trend.add({
+        'date': _todaysPlan!.date,
+        'rating': _todaysPlan!.dayRating,
+        'hasReview': true,
+      });
+    } else {
+      trend.add({
+        'date': now,
+        'rating': 0,
+        'hasReview': false,
+      });
+    }
+
+    // Add recent plans
+    for (final plan in _recentPlans.take(days - 1)) {
+      trend.add({
+        'date': plan.date,
+        'rating': plan.hasEveningReview ? plan.dayRating : 0,
+        'hasReview': plan.hasEveningReview,
+      });
+    }
+
+    // Sort oldest to newest
+    trend.sort(
+        (a, b) => (a['date'] as DateTime).compareTo(b['date'] as DateTime));
+
+    return trend;
+  }
+
+  /// Get average mood for recent days (only counting days with reviews)
+  double getAverageMood({int days = 7}) {
+    final trend = getMoodTrend(days: days);
+    final reviewedDays = trend.where((d) => d['hasReview'] == true).toList();
+
+    if (reviewedDays.isEmpty) return 0;
+
+    final sum =
+        reviewedDays.fold<int>(0, (sum, d) => sum + (d['rating'] as int));
+    return sum / reviewedDays.length;
+  }
+
+  /// Get a random gratitude item from recent reviews (for positivity boost)
+  String? getRandomGratitudeItem() {
+    final allGratitude = <String>[];
+
+    // Add today's gratitude
+    if (_todaysPlan != null) {
+      allGratitude.addAll(_todaysPlan!.gratitudeItems);
+    }
+
+    // Add recent gratitude items
+    for (final plan in _recentPlans.take(7)) {
+      allGratitude.addAll(plan.gratitudeItems);
+    }
+
+    if (allGratitude.isEmpty) return null;
+
+    // Return a random item
+    allGratitude.shuffle();
+    return allGratitude.first;
+  }
+
+  /// Get all gratitude items from recent reviews
+  List<String> getRecentGratitudeItems({int limit = 10}) {
+    final allGratitude = <String>[];
+
+    if (_todaysPlan != null) {
+      allGratitude.addAll(_todaysPlan!.gratitudeItems);
+    }
+
+    for (final plan in _recentPlans) {
+      allGratitude.addAll(plan.gratitudeItems);
+      if (allGratitude.length >= limit) break;
+    }
+
+    return allGratitude.take(limit).toList();
+  }
+
+  /// Get energy suggestion based on recent mood trends
+  String? getEnergySuggestion() {
+    final avgMood = getAverageMood(days: 5);
+
+    if (avgMood == 0) return null; // No data
+
+    if (avgMood <= 2) {
+      return '💙 Your recent days have been tough. Consider lighter tasks and more self-care today.';
+    } else if (avgMood <= 3) {
+      return '💡 You\'ve been in a moderate zone. Mix some easy wins with your priorities today.';
+    } else if (avgMood >= 4) {
+      return '🔥 You\'ve been on a roll! Great time to tackle challenging goals.';
+    }
+
+    return null;
+  }
+
+  /// Check if there's notable mood improvement or decline
+  String? getMoodTrendInsight() {
+    final trend = getMoodTrend(days: 5);
+    final reviewedDays = trend.where((d) => d['hasReview'] == true).toList();
+
+    if (reviewedDays.length < 3) return null;
+
+    // Compare first half average with second half average
+    final halfPoint = reviewedDays.length ~/ 2;
+    final firstHalf = reviewedDays.take(halfPoint);
+    final secondHalf = reviewedDays.skip(halfPoint);
+
+    final firstAvg =
+        firstHalf.fold<int>(0, (sum, d) => sum + (d['rating'] as int)) /
+            halfPoint;
+    final secondAvg =
+        secondHalf.fold<int>(0, (sum, d) => sum + (d['rating'] as int)) /
+            (reviewedDays.length - halfPoint);
+
+    if (secondAvg - firstAvg >= 1) {
+      return '📈 Your mood is trending up! Keep doing what you\'re doing.';
+    } else if (firstAvg - secondAvg >= 1) {
+      return '📉 Your mood has dipped recently. What could help you feel better?';
+    }
+
+    return null;
   }
 }
