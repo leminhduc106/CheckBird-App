@@ -20,10 +20,16 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
   bool _isFirstLaunch = true;
   bool _isCheckingFirstLaunch = true;
 
+  // Use a stream that combines auth state changes
+  late Stream<User?> _authStream;
+
   @override
   void initState() {
     super.initState();
     _checkFirstLaunch();
+    // Use idTokenChanges which fires on sign-in, sign-out, and token refresh
+    // This is more reliable than authStateChanges on web
+    _authStream = FirebaseAuth.instance.idTokenChanges();
   }
 
   Future<void> _checkFirstLaunch() async {
@@ -61,10 +67,15 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
     }
 
     return StreamBuilder<User?>(
-        stream: FirebaseAuth.instance.authStateChanges(),
+        stream: _authStream,
         builder: (context, snapshot) {
+          debugPrint(
+              'WelcomeScreen: Auth state changed - connectionState: ${snapshot.connectionState}, hasData: ${snapshot.hasData}, user: ${snapshot.data?.email}');
+
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
+            return const Scaffold(
+              body: Center(child: CircularProgressIndicator()),
+            );
           }
 
           // Check if user exists AND either:
@@ -79,6 +90,8 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                 .any((provider) => provider.providerId == 'google.com');
 
             isAuthenticated = user.emailVerified || isGoogleUser;
+            debugPrint(
+                'WelcomeScreen: User found - isGoogleUser: $isGoogleUser, emailVerified: ${user.emailVerified}, isAuthenticated: $isAuthenticated');
           }
 
           if (isAuthenticated) {
@@ -94,6 +107,8 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
               : const BeautifulWelcomeScreen();
 
           return PageTransitionSwitcher(
+            // Add key to force rebuild when auth state changes
+            key: ValueKey(isAuthenticated),
             child: currentWidget,
             transitionBuilder: (Widget child,
                 Animation<double> primaryAnimation,

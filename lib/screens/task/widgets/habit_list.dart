@@ -16,19 +16,38 @@ class HabitListScreen extends StatefulWidget {
 
 class _HabitListScreenState extends State<HabitListScreen> {
   final TodoListController _controller = TodoListController();
-  final Box<Todo> box = TodoListController().getTodoList();
   late final ValueNotifier<List<Todo>> _selectedHabit;
   List<bool> _selectedDays = [true, false, false, false, false, false, false];
+  bool _isInitialized = false;
 
   @override
   void initState() {
     super.initState();
-    _selectedHabit =
-        ValueNotifier(_controller.getHabitForMultiDays(_selectedDays));
+    _selectedHabit = ValueNotifier([]);
+    _initializeData();
+  }
+
+  Future<void> _initializeData() async {
+    final boxReady = await _controller.ensureBoxOpen();
+    if (boxReady && mounted) {
+      setState(() {
+        _isInitialized = true;
+        _selectedHabit.value = _controller.getHabitForMultiDays(_selectedDays);
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    if (!_isInitialized) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    final box = _controller.getTodoListSafe();
+    if (box == null) {
+      return const Center(child: Text('Unable to load habits'));
+    }
+
     return Scaffold(
         body: Column(
       children: [
@@ -48,9 +67,10 @@ class _HabitListScreenState extends State<HabitListScreen> {
         const SizedBox(height: 10.0),
         Expanded(
             child: ValueListenableBuilder(
-          valueListenable: _selectedHabit,
-          builder: (context, List<Todo> box, _) {
-            final todos = _selectedHabit.value;
+          valueListenable: box.listenable(),
+          builder: (context, Box<Todo> _, __) {
+            // Refresh the list when box changes
+            final todos = _controller.getHabitForMultiDays(_selectedDays);
             return ListView.builder(
               itemCount: todos.length,
               itemBuilder: (context, index) {

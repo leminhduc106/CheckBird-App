@@ -47,7 +47,11 @@ class TaskScreen extends StatelessWidget {
                         return const RemoveAllItemAD();
                       });
                   if (agree != null && agree == true) {
-                    TodoListController().removeAllTodo();
+                    final controller = TodoListController();
+                    final boxReady = await controller.ensureBoxOpen();
+                    if (boxReady) {
+                      controller.removeAllTodo();
+                    }
                   }
                 }
               },

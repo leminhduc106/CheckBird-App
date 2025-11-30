@@ -564,6 +564,14 @@ class PlanningService extends ChangeNotifier {
   /// Create tasks from priorities
   Future<void> createTasksFromPriorities(List<String> priorities) async {
     final controller = TodoListController();
+
+    // Ensure Hive box is open
+    final boxReady = await controller.ensureBoxOpen();
+    if (!boxReady) {
+      debugPrint('PlanningService: Cannot create tasks - Hive not ready');
+      return;
+    }
+
     final today = DateTime.now();
     final endOfDay = DateTime(today.year, today.month, today.day, 23, 59);
 

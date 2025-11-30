@@ -19,48 +19,52 @@ class ToDoListMain extends StatelessWidget {
     final tomorrow = today.add(const Duration(days: 1));
     final after2day = today.add(const Duration(days: 2));
     final Size size = MediaQuery.of(context).size;
-    return ValueListenableBuilder(
-        valueListenable: _controller.getTodoList().listenable(),
-        builder: (context, Box<Todo> box, _) {
-          return SingleChildScrollView(
-              child: Column(
-                  children: [
-                    const SizedBox(height: 10),
-                    const ShowDate(text: "Today"),
-                    if(_controller.countToDoForDay(today) ==
-                        0) const EmptyToDo(),
-                    SizedBox(
-                      height: size.width * 0.3 *
-                          _controller.countToDoForDay(today),
-                      child: TodoList(day: today, isToday: true),
-                    ),
-                    const ShowDate(text: "Tomorrow"),
-                    if(_controller.countTaskForDay(tomorrow) ==
-                        0) const EmptyToDo(),
-                    SizedBox(
-                      height: size.width * 0.3 *
-                          _controller.countTaskForDay(tomorrow),
-                      child: TodoList(day: tomorrow),
-                    ),
-                    const ShowDate(text: "After Tomorrow"),
-                    if(_controller.countTaskForDay(after2day) ==
-                        0) const EmptyToDo(),
-                    SizedBox(
-                      height: size.width * 0.3 *
-                          _controller.countTaskForDay(after2day),
-                      child: TodoList(day: after2day),
-                    ),
-                    const ShowDate(text: "More"),
-                    SizedBox(
-                      height: size.width * 0.3 *
-                          _controller.countTaskExcept3Day(today),
-                      child: TodoList(day: today, isMore: true),
-                    ),
 
-                  ]
-              )
-          );
-        }
-    );
+    // Check if Hive box is ready
+    final box = _controller.getTodoListSafe();
+    if (box == null) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    return ValueListenableBuilder(
+        valueListenable: box.listenable(),
+        builder: (context, Box<Todo> box, _) {
+          final todayCount = _controller.countToDoForDay(today);
+          final tomorrowCount = _controller.countTaskForDay(tomorrow);
+          final after2dayCount = _controller.countTaskForDay(after2day);
+          final moreCount = _controller.countTaskExcept3Day(today);
+
+          return SingleChildScrollView(
+              child: Column(children: [
+            const SizedBox(height: 10),
+            const ShowDate(text: "Today"),
+            if (todayCount == 0) const EmptyToDo(),
+            if (todayCount > 0)
+              SizedBox(
+                height: size.width * 0.3 * todayCount,
+                child: TodoList(day: today, isToday: true),
+              ),
+            const ShowDate(text: "Tomorrow"),
+            if (tomorrowCount == 0) const EmptyToDo(),
+            if (tomorrowCount > 0)
+              SizedBox(
+                height: size.width * 0.3 * tomorrowCount,
+                child: TodoList(day: tomorrow),
+              ),
+            const ShowDate(text: "After Tomorrow"),
+            if (after2dayCount == 0) const EmptyToDo(),
+            if (after2dayCount > 0)
+              SizedBox(
+                height: size.width * 0.3 * after2dayCount,
+                child: TodoList(day: after2day),
+              ),
+            const ShowDate(text: "More"),
+            if (moreCount > 0)
+              SizedBox(
+                height: size.width * 0.3 * moreCount,
+                child: TodoList(day: today, isMore: true),
+              ),
+          ]));
+        });
   }
 }

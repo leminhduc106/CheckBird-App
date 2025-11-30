@@ -20,15 +20,25 @@ class _TableCalendarScreenState extends State<TableCalendarScreen> {
   DateTime? _selectedDay;
 
   final TodoListController _controller = TodoListController();
-  final Box<Todo> box = TodoListController().getTodoList();
   late final ValueNotifier<List<Todo>> _selectedEvents;
+  bool _isInitialized = false;
 
   @override
   void initState() {
     super.initState();
-
     _selectedDay = _focusedDay;
-    _selectedEvents = ValueNotifier(_controller.getTaskForDay(_selectedDay!));
+    _selectedEvents = ValueNotifier([]);
+    _initializeData();
+  }
+
+  Future<void> _initializeData() async {
+    final boxReady = await _controller.ensureBoxOpen();
+    if (boxReady && mounted) {
+      setState(() {
+        _isInitialized = true;
+        _selectedEvents.value = _controller.getTaskForDay(_selectedDay!);
+      });
+    }
   }
 
   void _onDaySelected(DateTime selectedDay, DateTime focusedDay) {
@@ -44,10 +54,19 @@ class _TableCalendarScreenState extends State<TableCalendarScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (!_isInitialized) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    final box = _controller.getTodoListSafe();
+    if (box == null) {
+      return const Center(child: Text('Unable to load calendar'));
+    }
+
     return Scaffold(
       body: ValueListenableBuilder(
-          valueListenable: _controller.getTodoList().listenable(),
-          builder: (context, Box<Todo> box, _) {
+          valueListenable: box.listenable(),
+          builder: (context, Box<Todo> _, __) {
             return Column(
               children: [
                 TableCalendar(
@@ -71,11 +90,9 @@ class _TableCalendarScreenState extends State<TableCalendarScreen> {
                   },
                 ),
                 const SizedBox(height: 10.0),
-                Expanded(
-                    child: ValueListenableBuilder(
-                  valueListenable: _controller.getTodoList().listenable(),
-                  builder: (context, Box<Todo> box, _) {
-                    final todos = _selectedEvents.value;
+                Expanded(child: Builder(
+                  builder: (context) {
+                    final todos = _controller.getTaskForDay(_selectedDay!);
                     return ListView.builder(
                       itemCount: todos.length,
                       itemBuilder: (context, index) {

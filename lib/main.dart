@@ -62,11 +62,8 @@ class AppInitializer extends StatelessWidget {
       Hive.registerAdapter(TodoTypeAdapter());
     }
 
-    try {
-      await TodoListController().openBox();
-    } catch (e) {
-      debugPrint('Hive openBox failed: $e');
-    }
+    // Open Hive box - this is critical for the app to work
+    await TodoListController().openBox();
 
     // Notifications (only on mobile - not supported on web)
     if (!kIsWeb) {

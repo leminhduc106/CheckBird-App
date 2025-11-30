@@ -7,9 +7,46 @@ import 'package:check_bird/services/notification.dart';
 import 'todo.dart';
 
 class TodoListController {
+  // Singleton pattern to ensure consistent state
+  static final TodoListController _instance = TodoListController._internal();
+  factory TodoListController() => _instance;
+  TodoListController._internal();
+
+  // Track initialization state
+  static bool _isInitialized = false;
+  static bool get isInitialized => _isInitialized;
+
   Future<void> openBox() async {
-    await Hive.openBox<Todo>('todos');
-    await _ensureAllTodosHaveIds();
+    if (_isInitialized && Hive.isBoxOpen('todos')) {
+      return; // Already initialized
+    }
+
+    try {
+      await Hive.openBox<Todo>('todos');
+      _isInitialized = true;
+      await _ensureAllTodosHaveIds();
+      debugPrint('TodoListController: Hive box opened successfully');
+    } catch (e) {
+      debugPrint('TodoListController: Failed to open Hive box: $e');
+      _isInitialized = false;
+      rethrow;
+    }
+  }
+
+  /// Ensure the box is open, opening it if necessary
+  Future<bool> ensureBoxOpen() async {
+    if (Hive.isBoxOpen('todos')) {
+      _isInitialized = true;
+      return true;
+    }
+
+    try {
+      await openBox();
+      return true;
+    } catch (e) {
+      debugPrint('TodoListController: ensureBoxOpen failed: $e');
+      return false;
+    }
   }
 
   /// Migration function: Assigns UUIDs to todos that don't have IDs
@@ -77,6 +114,7 @@ class TodoListController {
   Future<void> closeBox() async {
     if (Hive.isBoxOpen('todos')) {
       await Hive.box('todos').close();
+      _isInitialized = false;
     }
   }
 
@@ -84,8 +122,6 @@ class TodoListController {
     // use ValueListenableBuilder to listen to this
     // Check if box is open first (important for web compatibility)
     if (!Hive.isBoxOpen('todos')) {
-      // Return an empty box-like behavior by opening it synchronously
-      // This shouldn't happen if initialization is correct
       throw StateError('Hive box "todos" is not open. Call openBox() first.');
     }
     return Hive.box<Todo>('todos');
@@ -93,7 +129,7 @@ class TodoListController {
 
   /// Safely get todo list, returns null if box isn't open
   Box<Todo>? getTodoListSafe() {
-    if (!Hive.isBoxOpen('todos')) {
+    if (!Hive.isBoxOpen('todos') || !_isInitialized) {
       return null;
     }
     return Hive.box<Todo>('todos');

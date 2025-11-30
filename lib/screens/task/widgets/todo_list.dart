@@ -26,7 +26,7 @@ class TodoList extends StatelessWidget {
       return const SizedBox.shrink();
     }
 
-    if(day == null){
+    if (day == null) {
       return ValueListenableBuilder(
         valueListenable: box.listenable(),
         builder: (context, Box<Todo> box, _) {
@@ -39,47 +39,44 @@ class TodoList extends StatelessWidget {
           );
         },
       );
-    }
-    else if (isToday){
+    } else if (isToday) {
       return ValueListenableBuilder(
         valueListenable: box.listenable(),
         builder: (context, Box<Todo> box, _) {
-          final todos =_controller.getToDoForDay(day!);
+          final todos = _controller.getToDoForDay(day!);
           return ListView.builder(
             physics: const NeverScrollableScrollPhysics(),
             itemCount: todos.length,
             itemBuilder: (context, index) {
-              return ToDoItemRemove(todos: todos,index: index);
+              return ToDoItemRemove(todos: todos, index: index);
             },
           );
         },
       );
-    }
-    else if(isMore){
+    } else if (isMore) {
       return ValueListenableBuilder(
         valueListenable: box.listenable(),
         builder: (context, Box<Todo> box, _) {
-          final todos =_controller.getTaskExcept3Day(day!);
+          final todos = _controller.getTaskExcept3Day(day!);
           return ListView.builder(
             physics: const NeverScrollableScrollPhysics(),
             itemCount: todos.length,
             itemBuilder: (context, index) {
-              return ToDoItemRemove(todos: todos,index: index);
+              return ToDoItemRemove(todos: todos, index: index);
             },
           );
         },
       );
-    }
-    else{
+    } else {
       return ValueListenableBuilder(
         valueListenable: box.listenable(),
         builder: (context, Box<Todo> box, _) {
-          final todos =_controller.getTaskForDay(day!);
+          final todos = _controller.getTaskForDay(day!);
           return ListView.builder(
             physics: const NeverScrollableScrollPhysics(),
             itemCount: todos.length,
             itemBuilder: (context, index) {
-              return ToDoItemRemove(todos: todos,index: index);
+              return ToDoItemRemove(todos: todos, index: index);
             },
           );
         },

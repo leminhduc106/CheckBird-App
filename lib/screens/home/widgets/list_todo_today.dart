@@ -16,14 +16,14 @@ class ToDoListToday extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final Size size = MediaQuery.of(context).size;
-    
+
     // Check if Hive box is ready
     final box = _controller.getTodoListSafe();
     if (box == null) {
       // Hive not ready, show empty state
       return const EmptyToDo();
     }
-    
+
     return ValueListenableBuilder(
       valueListenable: box.listenable(),
       builder: (context, Box<Todo> box, _) {

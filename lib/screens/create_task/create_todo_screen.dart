@@ -114,8 +114,23 @@ class _CreateTodoScreenState extends State<CreateTodoScreen> {
         newWeekdays: widget.todo!.type == TodoType.task ? null : _habitLoop,
       );
     } else {
+      // Ensure Hive box is open before adding
+      final controller = TodoListController();
+      final boxReady = await controller.ensureBoxOpen();
+      if (!boxReady) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Unable to save task. Please try again.'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+        return;
+      }
+
       if (_todoType == TodoType.habit) {
-        await TodoListController().addTodo(
+        await controller.addTodo(
           Todo.habit(
             todoName: _todoName,
             todoDescription: _todoDescription,
@@ -131,7 +146,7 @@ class _CreateTodoScreenState extends State<CreateTodoScreen> {
         debugPrint('  - Name: $_todoName');
         debugPrint('  - Due date: $_dueDate');
         debugPrint('  - Notification: $_notification');
-        await TodoListController().addTodo(
+        await controller.addTodo(
           Todo.task(
               todoName: _todoName,
               todoDescription: _todoDescription,
@@ -143,7 +158,9 @@ class _CreateTodoScreenState extends State<CreateTodoScreen> {
         );
       }
     }
-    Navigator.of(context).pop();
+    if (mounted) {
+      Navigator.of(context).pop();
+    }
   }
 
   @override

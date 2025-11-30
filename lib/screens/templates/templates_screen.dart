@@ -514,6 +514,20 @@ class _TemplatesScreenState extends State<TemplatesScreen>
 
     if (confirmed != true) return;
 
+    // Ensure Hive box is open
+    final boxReady = await _todoController.ensureBoxOpen();
+    if (!boxReady) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Unable to save tasks. Please try again.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      return;
+    }
+
     int addedCount = 0;
 
     for (final templateTask in template.tasks) {
