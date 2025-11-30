@@ -17,7 +17,7 @@ class Authentication {
         scopes: ['email', 'profile'],
       );
     }
-    
+
     if (defaultTargetPlatform == TargetPlatform.iOS ||
         defaultTargetPlatform == TargetPlatform.macOS) {
       return GoogleSignIn(
@@ -35,21 +35,21 @@ class Authentication {
         final GoogleAuthProvider googleProvider = GoogleAuthProvider();
         googleProvider.addScope('email');
         googleProvider.addScope('profile');
-        
-        final UserCredential loggedInUser = 
+
+        final UserCredential loggedInUser =
             await FirebaseAuth.instance.signInWithPopup(googleProvider);
         user = loggedInUser.user;
-        
+
         if (user != null) {
           await FirebaseFirestore.instance
               .collection('users')
               .doc(user!.uid)
               .set({'username': user!.displayName}, SetOptions(merge: true));
         }
-        
+
         return loggedInUser;
       }
-      
+
       // For mobile platforms, use google_sign_in package
       final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
       if (googleUser == null) {

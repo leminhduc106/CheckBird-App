@@ -19,9 +19,16 @@ class TodoList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Check if Hive box is ready
+    final box = _controller.getTodoListSafe();
+    if (box == null) {
+      // Hive not ready, show empty container
+      return const SizedBox.shrink();
+    }
+
     if(day == null){
       return ValueListenableBuilder(
-        valueListenable: _controller.getTodoList().listenable(),
+        valueListenable: box.listenable(),
         builder: (context, Box<Todo> box, _) {
           final todos = box.values.toList();
           return ListView.builder(
@@ -35,7 +42,7 @@ class TodoList extends StatelessWidget {
     }
     else if (isToday){
       return ValueListenableBuilder(
-        valueListenable: _controller.getTodoList().listenable(),
+        valueListenable: box.listenable(),
         builder: (context, Box<Todo> box, _) {
           final todos =_controller.getToDoForDay(day!);
           return ListView.builder(
@@ -50,7 +57,7 @@ class TodoList extends StatelessWidget {
     }
     else if(isMore){
       return ValueListenableBuilder(
-        valueListenable: _controller.getTodoList().listenable(),
+        valueListenable: box.listenable(),
         builder: (context, Box<Todo> box, _) {
           final todos =_controller.getTaskExcept3Day(day!);
           return ListView.builder(
@@ -65,7 +72,7 @@ class TodoList extends StatelessWidget {
     }
     else{
       return ValueListenableBuilder(
-        valueListenable: _controller.getTodoList().listenable(),
+        valueListenable: box.listenable(),
         builder: (context, Box<Todo> box, _) {
           final todos =_controller.getTaskForDay(day!);
           return ListView.builder(

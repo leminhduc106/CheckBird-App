@@ -75,11 +75,27 @@ class TodoListController {
   }
 
   Future<void> closeBox() async {
-    await Hive.box('todos').close();
+    if (Hive.isBoxOpen('todos')) {
+      await Hive.box('todos').close();
+    }
   }
 
   Box<Todo> getTodoList() {
     // use ValueListenableBuilder to listen to this
+    // Check if box is open first (important for web compatibility)
+    if (!Hive.isBoxOpen('todos')) {
+      // Return an empty box-like behavior by opening it synchronously
+      // This shouldn't happen if initialization is correct
+      throw StateError('Hive box "todos" is not open. Call openBox() first.');
+    }
+    return Hive.box<Todo>('todos');
+  }
+
+  /// Safely get todo list, returns null if box isn't open
+  Box<Todo>? getTodoListSafe() {
+    if (!Hive.isBoxOpen('todos')) {
+      return null;
+    }
     return Hive.box<Todo>('todos');
   }
 
