@@ -5,7 +5,8 @@ import 'package:timezone/timezone.dart' as tz;
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 // Helper to check platform without using dart:io directly on web
-bool get _isAndroid => !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
+bool get _isAndroid =>
+    !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
 bool get _isIOS => !kIsWeb && defaultTargetPlatform == TargetPlatform.iOS;
 
 class NotificationService {

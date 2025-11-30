@@ -61,7 +61,7 @@ class AppInitializer extends StatelessWidget {
     if (!Hive.isAdapterRegistered(1)) {
       Hive.registerAdapter(TodoTypeAdapter());
     }
-    
+
     try {
       await TodoListController().openBox();
     } catch (e) {

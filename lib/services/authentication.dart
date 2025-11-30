@@ -10,9 +10,16 @@ class Authentication {
   static final GoogleSignIn _googleSignIn = _buildGoogleSignIn();
 
   static GoogleSignIn _buildGoogleSignIn() {
-    if (!kIsWeb &&
-        (defaultTargetPlatform == TargetPlatform.iOS ||
-            defaultTargetPlatform == TargetPlatform.macOS)) {
+    if (kIsWeb) {
+      // For web, use signInWithPopup directly via Firebase Auth
+      // GoogleSignIn package has limited web support
+      return GoogleSignIn(
+        scopes: ['email', 'profile'],
+      );
+    }
+    
+    if (defaultTargetPlatform == TargetPlatform.iOS ||
+        defaultTargetPlatform == TargetPlatform.macOS) {
       return GoogleSignIn(
         clientId: DefaultFirebaseOptions.ios.iosClientId,
       );
@@ -23,6 +30,27 @@ class Authentication {
 
   static Future<UserCredential?> signInWithGoogle() async {
     try {
+      // For web, use Firebase Auth's signInWithPopup directly
+      if (kIsWeb) {
+        final GoogleAuthProvider googleProvider = GoogleAuthProvider();
+        googleProvider.addScope('email');
+        googleProvider.addScope('profile');
+        
+        final UserCredential loggedInUser = 
+            await FirebaseAuth.instance.signInWithPopup(googleProvider);
+        user = loggedInUser.user;
+        
+        if (user != null) {
+          await FirebaseFirestore.instance
+              .collection('users')
+              .doc(user!.uid)
+              .set({'username': user!.displayName}, SetOptions(merge: true));
+        }
+        
+        return loggedInUser;
+      }
+      
+      // For mobile platforms, use google_sign_in package
       final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
       if (googleUser == null) {
         debugPrint('Google Sign-In aborted by user');
