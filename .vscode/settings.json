@@ -1,14 +1,15 @@
 {
-    "cSpell.words": [
-        "Alives",
-        "Appbar",
-        "autofocus",
-        "checkbird",
-        "Chewie",
-        "darkmode",
-        "firestore",
-        "techlosophy",
-        "todos",
-        "unfocus"
-    ]
+  "cSpell.words": [
+    "Alives",
+    "Appbar",
+    "autofocus",
+    "checkbird",
+    "Chewie",
+    "darkmode",
+    "firestore",
+    "techlosophy",
+    "todos",
+    "unfocus"
+  ],
+  "dart.flutterSdkPath": ".fvm/versions/3.29.3"
 }

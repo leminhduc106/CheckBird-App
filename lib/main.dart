@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:check_bird/models/todo/todo.dart';
 import 'package:check_bird/models/todo/todo_list_controller.dart';
 import 'package:check_bird/widgets/reward_toast_overlay.dart';
@@ -19,11 +18,11 @@ import 'package:check_bird/screens/welcome/welcome_screen.dart';
 import 'package:check_bird/screens/welcome/beautiful_welcome_screen.dart';
 import 'package:check_bird/screens/setting/setting_screen.dart';
 import 'package:check_bird/services/notification.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:hive_flutter/hive_flutter.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_settings_screens/flutter_settings_screens.dart';
 import 'models/todo/todo_type.dart';
@@ -48,12 +47,13 @@ class AppInitializer extends StatelessWidget {
       options: DefaultFirebaseOptions.currentPlatform,
     );
 
-    // Lock portrait mode
-    await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+    // Lock portrait mode (only on mobile)
+    if (!kIsWeb) {
+      await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+    }
 
-    // Hive setup (guard against duplicate adapter registration on hot reload)
-    Directory directory = await getApplicationDocumentsDirectory();
-    await Hive.initFlutter(directory.path);
+    // Hive setup - web uses IndexedDB, mobile uses file system
+    await Hive.initFlutter();
     if (!Hive.isAdapterRegistered(0)) {
       Hive.registerAdapter(TodoAdapter());
     }
@@ -62,11 +62,12 @@ class AppInitializer extends StatelessWidget {
     }
     await TodoListController().openBox();
 
-    // Notifications
-    await NotificationService().initialize();
-
-    // Reschedule all notifications (important for after device reboot)
-    await TodoListController().rescheduleAllNotifications();
+    // Notifications (only on mobile - not supported on web)
+    if (!kIsWeb) {
+      await NotificationService().initialize();
+      // Reschedule all notifications (important for after device reboot)
+      await TodoListController().rescheduleAllNotifications();
+    }
 
     // Settings
     await Settings.init(cacheProvider: SharePreferenceCache());
